@@ -8,7 +8,10 @@ author:
 date: "2021-08-16"
 description: |
   Evaluating ecological models with data
-site: distill::distill_website
+output:
+  distill::distill_article:
+    toc: true
+    toc_float: true
 ---
 
 
@@ -40,6 +43,22 @@ xaringanExtra::embed_xaringan(url = "slides/01_introduction.html", ratio = "16:9
 ```{r slides-definitions, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
 xaringanExtra::embed_xaringan(url = "slides/02_definitions.html", ratio = "16:9")
 ```
+
+
+```{r slides-rules, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/03_rules.html", ratio = "16:9")
+```
+
+
+```{r slides-problem, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/04_problem.html", ratio = "16:9")
+```
+
+
+```{r slides-solutions, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/05_solutions.html", ratio = "16:9")
+```
+
 
 
 ### Maximum likelihood methods  
