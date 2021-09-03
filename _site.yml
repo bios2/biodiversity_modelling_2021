@@ -1,0 +1,12 @@
+name: "biodivmodellingsite"
+title: "Biodiversity Modelling Summer School 2021"
+description: |
+  The theme of this course is evalutating ecological models with data
+output_dir: "docs"
+navbar:
+  right:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+output: distill::distill_article
