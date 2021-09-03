@@ -13,13 +13,3 @@ knitr::opts_chunk$set(echo = FALSE)
 The toolbox for the analysis of ecological data is expanding at unprecedented rates and it is almost impossible to track all of the novel methods available. Their high degree of sophistication is also very restricting, limiting their applicability and our appreciation of some innovative studies. It is out of reach to learn each of them and  advanced training in data modelling is by far the best asset to learn about new methods and develop the one’s best suited for an ecological problem. The objective of this course is to train students methods and skills to fit models to ecological data.
 
 The course will introduce notions of probabilities, maximum likelihood and Bayesian modelling. Emphasis will be put on algorithms and computational methods in order to develop abilities to solve a wide range of problems. By the end of the course, students will be able to define their modelling problem, arrange their data properly, develop the equations to describe the phenomenon of interest and evaluate parameters using information based and Bayesian approaches.
-
-<div class="panel panel-success">
-  <div class="panel-heading">Challenge #6:</div>
-  <div class="panel-body">
-Use `coord_cartesian` to:
-
-* Set the x-axis range to 1980-2018
-* Set the y-axis range to 0-80
-  </div>
-</div>

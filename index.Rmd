@@ -2,7 +2,6 @@
 title: "Biodiversity Modelling Summer School"
 description: |
   16 to 27 August 2021
-authors: Dominique Gravel, Andrew MacDonald
 site: distill::distill_website
 ---
 
@@ -14,7 +13,4 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Learn more about publishing to GitHub Pages at:
 # https://rstudio.github.io/distill/publish_website.html#github-pages
-
 ```
-
-
