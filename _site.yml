@@ -1,5 +1,6 @@
 name: "biodivmodellingsite"
 title: "Biodiversity Modelling Summer School 2021"
+theme: biodivtheme.css
 description: |
   The theme of this course is evalutating ecological models with data
 output_dir: "docs"
