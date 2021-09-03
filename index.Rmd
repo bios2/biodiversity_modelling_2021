@@ -1,9 +1,16 @@
 ---
 title: "Biodiversity Modelling Summer School"
+author:
+- name: Dominique Gravel, Ph.D.
+  affiliation: Université de Sherbrooke
+- name: Andrew MacDonald, Ph.D.
+  affiliation: Université de Sherbrooke
+date: "2021-08-16"
 description: |
-  16 to 27 August 2021
+  Evaluating ecological models with data
 site: distill::distill_website
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -13,4 +20,31 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Learn more about publishing to GitHub Pages at:
 # https://rstudio.github.io/distill/publish_website.html#github-pages
+```
+
+## Probabilities and distributions  
+
+**16 August**  
+
+know your data, define your problem.
+
+```{r share-again, echo=FALSE}
+xaringanExtra::use_share_again()
+```
+
+```{r slides-intro, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/01_introduction.html", ratio = "16:9")
+```
+
+
+### Maximum likelihood methods  
+
+*18 August*  
+
+write down equations for your model.
+
+```
+August 20	Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.
+August 23	Bayesian statistics: how to properly represent uncertainty in ecological models.
+August 25	Sampling algorithms: evaluating posterior distributions by your own.
 ```
