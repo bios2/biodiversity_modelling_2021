@@ -94,6 +94,13 @@ xaringanExtra::embed_xaringan(url = "slides/06_distributions.html", ratio = "16:
 
 write down equations for your model.
 
+
+```{r slides-likelihood, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/07_likelihood.html", ratio = "16:9")
+```
+
+
+
 ```
 August 20	Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.
 August 23	Bayesian statistics: how to properly represent uncertainty in ecological models.
