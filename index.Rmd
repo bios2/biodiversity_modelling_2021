@@ -100,6 +100,16 @@ xaringanExtra::embed_xaringan(url = "slides/07_likelihood.html", ratio = "16:9")
 ```
 
 
+```{r slides-likelihood-problem, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/08_likelihood_problem.html", ratio = "16:9")
+```
+
+
+```{r slides-likelihood-solution, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/09_likelihood_solution.html", ratio = "16:9")
+```
+
+
 
 ```
 August 20	Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.

@@ -1,26 +1,16 @@
 <!DOCTYPE html>
 <html lang="" xml:lang="">
   <head>
-    <title>Introduction</title>
+    <title>Maximum likelihood</title>
     <meta charset="utf-8" />
     <meta name="author" content="Dominique Gravel" />
     <script src="assets/header-attrs-2.8/header-attrs.js"></script>
     <link href="assets/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="assets/remark-css-0.0.1/hygge.css" rel="stylesheet" />
-    <link href="assets/panelset-0.2.6/panelset.css" rel="stylesheet" />
-    <script src="assets/panelset-0.2.6/panelset.js"></script>
-    <script src="assets/clipboard-2.0.6/clipboard.min.js"></script>
-    <link href="assets/shareon-1.4.1/shareon.min.css" rel="stylesheet" />
-    <script src="assets/shareon-1.4.1/shareon.min.js"></script>
-    <link href="assets/xaringanExtra-shareagain-0.2.6/shareagain.css" rel="stylesheet" />
-    <script src="assets/xaringanExtra-shareagain-0.2.6/shareagain.js"></script>
     <link rel="stylesheet" href="assets/ecl707.css" type="text/css" />
   </head>
   <body>
     <textarea id="source">
-
-
-
 
 
 class: title-slide, middle
@@ -36,127 +26,171 @@ class: title-slide, middle
   }
 &lt;/style&gt;
 
-
 # Maximum likelihood
 
 &lt;hr width="65%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
 
-## Technical problem
+## Solutions to exercises
 
 &lt;hr width="65%" align="left" size="0.3" color="orange" style="margin-bottom:40px;" alt="@Martin Sanchez"&gt;&lt;/hr&gt;
 
 .instructors[
-  **ECL707/807** - Dominique Gravel
+  **ECL707/807** - Dominique Gravel &amp; Andrew MacDonald
 ]
 
 &lt;img src="assets/img/logo.png" width="25%" style="margin-top:20px;"&gt;&lt;/img&gt;
 
 ---
 
-# Distribution of biomes in Québec
+# Exercise 2.2. 
+## Time to practice : maple distribution at Sutton
 
-&lt;div style='text-align:center;'&gt;
-&lt;img src="assets/img/bioclim.png" height="500px"&gt;&lt;/img&gt;
-&lt;/div&gt;
-
+![](09_likelihood_solution_files/figure-html/unnamed-chunk-1-1.png)&lt;!-- --&gt;
 ---
-# A metacommunity model of forest dynamics
-&lt;div style='text-align:center;'&gt;
-&lt;img src="assets/img/modele_vissault.png" height="500px"&gt;&lt;/img&gt;
-&lt;/div&gt;
 
----
-# States
+# Exercise 2.2.
+## A species distribution problem
 
-- 'B' if there are only boreal tree species
-- 'T' if there are only temperate tree species
-- 'M' for mixtures
-- 'R' if there are no trees (regeneration)
+**The model**
 
+`$$y \thicksim f(E, \theta)$$`
 
----
-# Transition matrix between states
+- f is a probability density function
+- `\(y\)` is the abundance (in stems per quadrat) of sugar maple
+- `\(E\)` is elevation
+- `\(\theta\)` is a set of parameters
 
-$$
-`\begin{bmatrix}
-P(B_{t+1}|B_t) &amp; P(B_{t+1}|T_t) &amp; P(B_{t+1}|M_t) &amp; P(B_{t+1}|R_t) \\
-P(T_{t+1}|B_t) &amp; P(T_{t+1}|T_t) &amp; P(T_{t+1}|M_t) &amp; P(T_{t+1}|R_t) \\
-P(M_{t+1}|B_t) &amp; P(M_{t+1}|T_t) &amp; P(M_{t+1}|M_t) &amp; P(M_{t+1}|R_t) \\  
-P(R_{t+1}|B_t) &amp; P(R_{t+1}|T_t) &amp; P(R_{t+1}|M_t) &amp; P(R_{t+1}|R_t) \\
-\end{bmatrix}`
-$$
-
-Where rows are states at time `\(t+1\)` and columns states at time `\(t\)`. A column is therefore a vector of probabilities corresponding to a multinomial distribution. Each column must therefore sum to 1. 
-
----
-# Transition matrix between states
-
-$$
-`\begin{bmatrix}
-P(B_{t+1}|B_t) &amp; P(B_{t+1}|T_t) &amp; P(B_{t+1}|M_t) &amp; P(B_{t+1}|R_t) \\
-P(T_{t+1}|B_t) &amp; P(T_{t+1}|T_t) &amp; P(T_{t+1}|M_t) &amp; P(T_{t+1}|R_t) \\
-P(M_{t+1}|B_t) &amp; P(M_{t+1}|T_t) &amp; P(M_{t+1}|M_t) &amp; P(M_{t+1}|R_t) \\  
-P(R_{t+1}|B_t) &amp; P(R_{t+1}|T_t) &amp; P(R_{t+1}|M_t) &amp; P(R_{t+1}|R_t) \\
-\end{bmatrix}`
-$$
-
-A single entry reads as follows : `\(P(M_{t+1} | T_t)\)` is the probability that a cell that was in state `\(T\)` at time `\(t\)` becomes a cell in state `\(M\)` at time `\(t+1\)`. Ecologically speaking, this would indicate a colonization by a `\(B\)` tree. 
+**Things to think about :** 
+- What are the characteristics of the data ? 
+- What is the form of the function ? 
+- What is the probability density function ?
 
 ---
 
-# What we will do
-
-- Evaluate the transition matrix (each row is a multinomial model) 
-
-- Use a grid search to evaluate paramaters 
-
-- Putting some constraints on parameters to answer ecological questions 
-
----
-
-# The problem 
-
-The multinomial distribution is a generalization of the binomial to `\(n\)` discrete states. 
-
-It is therefore more complicated to evaluate the different probabilities because the sum for the different states must equal to 1. You can't throw as many values as there are states when you try candidate parameters, you need to find a way that the sum is always 1. 
-
----
-
-# Steps
-
-1. Try first the transition from the state `\(B\)` (you will have to subset the data)
-
-2. Write a likelihood function that has 4 parameters (the transition probabilities)
-
-3. Test your function with candidate parameter values 
-
-4. Propose alternative candidate parameter values and compare
-
-5. Redo the whole thing with a grid search to find your maximum likelihood estimates
-
----
-
-# Scientific questions
-
-1. Are all transition probabilities `\(&gt; 0\)` ? 
-
-2. Compare a model where transitions `\(P(R_{t+1}|B_t)\)`, `\(P(R_{t+1}|M_t)\)` and `\(P(R_{t+1}|T_t)\)` are the same. Is the likelihood lower or higher ?
-
-3. Divide the data in three categories according to annual average temperature and recompute the transition matrices for each section. Then after, compute the likelihood for the entire dataset, with specific models for the different subsections. Is the model better ? 
-
----
-
-# Playing with the models 
-
-Markov chains are commonly used in forest ecology to simulate dynamics over the long term. You can run the model to get at the equilibrium distribution with a simple R code, where `\(\mathbf{T}\)`
-is a transition matrix and `\(\mathbf{X_t}\)` is a vector of initial conditions (relative abundance of the different states). You run the following : 
+# Solution 2.2.
+## Linear regression
 
 
 ```r
-Xt1 &lt;- T %*% Xt
+### Likelihood function
+ll_fn &lt;- function(a,b,sig,E,obs) {
+
+    # Function for the mean
+    mu &lt;- a + b*E
+
+    # PDF 
+    lik &lt;- dnorm(x=obs, mean = mu, sd = sig)
+    loglik &lt;- log(lik)
+
+    # Return loglikelihood
+    sum(loglik)
+}
 ```
 
-Once you are done with evaluation of the global and the local transition matrices, you can run the model for a few time steps (you can use pretty much any initial condition you want, as long as the vector sums to 1) and compare the solutions. 
+---
+
+# Solution 2.2.
+## Linear regression
+
+
+```r
+### Try different values 
+ll_fn(a=25,b=-0.075,sig=10,E=sutton$y,obs=sutton$acsa)
+```
+
+```
+## [1] -3275.689
+```
+
+```r
+ll_fn(a=25,b=-0.05,sig=10,E=sutton$y,obs=sutton$acsa)
+```
+
+```
+## [1] -2046.312
+```
+
+```r
+ll_fn(a=30,b=-0.075,sig=10,E=sutton$y,obs=sutton$acsa)
+```
+
+```
+## [1] -2878.139
+```
+
+---
+
+# Solution 2.2.
+## Linear regression
+
+
+```r
+### Run a grid search 
+a_vec &lt;- seq(15,45,length.out = 100)
+b_vec &lt;- seq(-0.1,-0.01,length.out = 100)
+res &lt;- matrix(nr=100,nc=100)
+for(i in 1:100) {
+    for(j in 1:100) {
+        res[i,j] &lt;- ll_fn(a=a_vec[i],b=b_vec[j],sig=10,E=sutton$y,obs=sutton$acsa)
+    }
+}
+```
+---
+
+# Solution 2.2.
+## Linear regression
+
+![](09_likelihood_solution_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+
+---
+
+# Solution 2.2.
+## Logistic regression
+
+
+```r
+### Likelihood function
+ll_fn &lt;- function(a,b,sig,E,obs) {
+
+    # Function for the mean
+    mu &lt;- a + b*E
+
+    # logit transformation 
+    p = exp(mu)/(1+exp(mu))
+
+    # no PDF for logistic regression
+    # use the output of the model directly 
+    lik &lt;- numeric(length(obs))
+    lik[obs==1] = log(p[obs==1])
+    lik[obs==0] = log(1-p[obs==0])
+
+    # Return loglikelihood
+    sum(log(lik))
+}
+```
+
+---
+
+# Solution 2.2.
+## Poisson regression
+
+
+```r
+### Likelihood function
+ll_fn &lt;- function(a,b,sig,E,obs) {
+
+    # Function for the mean
+    mu &lt;- a + b*E
+
+    # PDF 
+    lik &lt;- dpois(x=obs, lambda = mu)
+    loglik &lt;- log(lik)
+
+    # Return loglikelihood
+    sum(loglik)
+}
+```
+
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
