@@ -14,6 +14,15 @@ output:
       beforeInit: "../macros.js"
 ---
 
+```{r setup, include = FALSE}
+xaringanExtra::use_panelset()
+xaringanExtra::use_share_again()
+xaringanExtra::style_share_again(
+  share_buttons = c("twitter", "linkedin", "pocket")
+)
+```
+
+
 class: title-slide, middle
 
 <style type="text/css">
