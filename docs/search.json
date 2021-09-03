@@ -6,7 +6,7 @@
       "description": "This course will be taught by Pr. Dominique Gravel and Dr. Andrew MacDonald (Université de Sherbrooke) and featuring guest speakers Professors Vianey Leos Barajas (U of Toronto), Timothée Poisot (U de Montreal), Pedro Peres-Neto (Concordia), Sandra Hamel (U Laval) and Marc Bélisle (U de Sherbrooke).",
       "author": [],
       "contents": "\nCourse content\nThe toolbox for the analysis of ecological data is expanding at unprecedented rates and it is almost impossible to track all of the novel methods available. Their high degree of sophistication is also very restricting, limiting their applicability and our appreciation of some innovative studies. It is out of reach to learn each of them and advanced training in data modelling is by far the best asset to learn about new methods and develop the one’s best suited for an ecological problem. The objective of this course is to train students methods and skills to fit models to ecological data.\nThe course will introduce notions of probabilities, maximum likelihood and Bayesian modelling. Emphasis will be put on algorithms and computational methods in order to develop abilities to solve a wide range of problems. By the end of the course, students will be able to define their modelling problem, arrange their data properly, develop the equations to describe the phenomenon of interest and evaluate parameters using information based and Bayesian approaches.\n\n\n\n",
-      "last_modified": "2021-09-03T13:46:18-04:00"
+      "last_modified": "2021-09-03T13:51:51-04:00"
     },
     {
       "path": "index.html",
@@ -23,8 +23,8 @@
         }
       ],
       "date": "2021-08-16",
-      "contents": "\nProbabilities and distributions\n16 August\nknow your data, define your problem.\n\n\n\n\n\n\nfitvids('.shareagain', {players: 'iframe'});\n\nMaximum likelihood methods\n18 August\nwrite down equations for your model.\nAugust 20   Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.\nAugust 23   Bayesian statistics: how to properly represent uncertainty in ecological models.\nAugust 25   Sampling algorithms: evaluating posterior distributions by your own.\n\n\n\n",
-      "last_modified": "2021-09-03T13:46:20-04:00"
+      "contents": "\nProbabilities and distributions\n16 August\nknow your data, define your problem.\n\n\n\n\n\n\nfitvids('.shareagain', {players: 'iframe'});\n\n\n\n\nfitvids('.shareagain', {players: 'iframe'});\n\nMaximum likelihood methods\n18 August\nwrite down equations for your model.\nAugust 20   Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.\nAugust 23   Bayesian statistics: how to properly represent uncertainty in ecological models.\nAugust 25   Sampling algorithms: evaluating posterior distributions by your own.\n\n\n\n",
+      "last_modified": "2021-09-03T13:51:53-04:00"
     }
   ],
   "collections": []

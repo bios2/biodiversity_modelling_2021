@@ -37,6 +37,11 @@ xaringanExtra::embed_xaringan(url = "slides/01_introduction.html", ratio = "16:9
 ```
 
 
+```{r slides-definitions, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/02_definitions.html", ratio = "16:9")
+```
+
+
 ### Maximum likelihood methods  
 
 *18 August*  
