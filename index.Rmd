@@ -111,8 +111,12 @@ xaringanExtra::embed_xaringan(url = "slides/09_likelihood_solution.html", ratio 
 
 ## Optimization
 
+Once we know how to calculate likelihood, we can apply this to a very general statistical practice: how do we find parameters that maximize the likelihood of the data? this is an optimization problem 
+
 ```
 August 20	Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.
+
 August 23	Bayesian statistics: how to properly represent uncertainty in ecological models.
+
 August 25	Sampling algorithms: evaluating posterior distributions by your own.
 ```
