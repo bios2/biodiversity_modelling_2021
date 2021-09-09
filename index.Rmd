@@ -149,6 +149,12 @@ xaringanExtra::embed_xaringan(url = "slides/11_optimization_problem.html", ratio
 
 [Bayesian statistics]{.panel-name}
 
+
+```{r slides-bayes, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/12_Bayes.html", ratio = "16:9")
+```
+
+
 :::
 
 :::{.panel}
