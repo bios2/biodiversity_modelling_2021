@@ -29,7 +29,7 @@ xaringanExtra::use_panelset()
 
 ## Resources and exercises
 
-
+[metropolis code](metropolis_example.html)
 
 ## Slides and lecture materials
 
@@ -168,6 +168,10 @@ xaringanExtra::embed_xaringan(url = "slides/14_tree_models.html", ratio = "16:9"
 :::{.panel}
 
 [Sampling algorithms]{.panel-name}
+
+```{r slides-mcmc, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/15_mcmc.html", ratio = "16:9")
+```
 
 :::
 
