@@ -5,6 +5,8 @@ author:
   affiliation: Université de Sherbrooke
 - name: Andrew MacDonald, Ph.D.
   affiliation: Université de Sherbrooke
+- name: Willian Vieira, M. Sc.
+  affiliation: Université de Sherbrooke
 date: "2021-08-16"
 description: |
   Evaluating ecological models with data
