@@ -1,7 +1,6 @@
 ---
-title: "Simple Metropolis Algorithm"
+title: "Introduction to the Metropolis Algorithm"
 author: "Andrew"
-date: "26/08/2021"
 output: html_document
 ---
 
