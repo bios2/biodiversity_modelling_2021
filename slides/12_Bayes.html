@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Bayes</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Dominique Gravel &amp; Andrew MacDonald" />
+    <script src="assets/header-attrs-2.8/header-attrs.js"></script>
+    <link href="assets/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="assets/remark-css-0.0.1/hygge.css" rel="stylesheet" />
+    <link href="assets/panelset-0.2.6/panelset.css" rel="stylesheet" />
+    <script src="assets/panelset-0.2.6/panelset.js"></script>
+    <script src="assets/clipboard-2.0.6/clipboard.min.js"></script>
+    <link href="assets/shareon-1.4.1/shareon.min.css" rel="stylesheet" />
+    <script src="assets/shareon-1.4.1/shareon.min.js"></script>
+    <link href="assets/xaringanExtra-shareagain-0.2.6/shareagain.css" rel="stylesheet" />
+    <script src="assets/xaringanExtra-shareagain-0.2.6/shareagain.js"></script>
+    <link rel="stylesheet" href="assets/ecl707.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: title-slide, middle
+
+&lt;style type="text/css"&gt;
+  .title-slide {
+    background-image: url('assets/img/bg.jpg');
+    background-color: #23373B;
+    background-size: contain;
+    border: 0px;
+    background-position: 600px 0;
+    line-height: 1;
+  }
+&lt;/style&gt;
+
+# Model evaluation with ecological data
+
+&lt;hr width="65%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
+
+## Bayesian approaches
+
+&lt;hr width="65%" align="left" size="0.3" color="orange" style="margin-bottom:40px;" alt="@Martin Sanchez"&gt;&lt;/hr&gt;
+
+.instructors[
+  Andrew MacDonald
+]
+
+&lt;img src="assets/img/logo.png" width="25%" style="margin-top:20px;"&gt;&lt;/img&gt;
+
+---
+# Bayesian Philosophy
+
+What makes a Bayesian way of thinking? 
+
+--
+
+$$
+P(A|B) = \frac{P(B|A)P(A)}{P(B)}
+$$
+
+is it Bayes Rule?
+
+
+--
+
+Not entirely! On it's own, this Rule is just logic/algebra
+
+---
+# Bayesian Philosophy
+
+Bayesians quantify uncertainty with probability 
+
+![](12_Bayes_files/figure-html/unnamed-chunk-1-1.png)&lt;!-- --&gt;
+
+---
+# Bayesian Philosophy
+
+In other words: Bayesians consider that the scientific world is divided into two parts: 
+
+* .huge[**The Observed**]: Data! the observations, numbers, photos, "y variables" whatever you call them
+
+--
+
+* .huge[**The Unobserved**]: parameters, latent states, usually of much more general scientific interest
+
+
+---
+class: center
+# Bayesian Philosophy
+
+How do we use the observed to learn about the unobserved? 
+
+We use: 
+
+
+$$
+[y, \theta]
+$$
+
+the **joint distribution of the parameters and the data**
+
+---
+
+uh what kind of joint is this
+
+.pull-left[![](https://media.giphy.com/media/a5jlJqXTu6g92/giphy.gif)]
+
+
+.pull-right[![](https://media.giphy.com/media/CoB1VA7w5cAjC/giphy.gif?cid=ecf05e4777hzudz4rg80tjmzhpzdxfm1gaju520k2hm4e6z4&amp;rid=giphy.gif&amp;ct=g)]
+
+---
+# Bayesian Philosophy
+.pull-left[A simple sketch of a joint distribution: when a parameter changes (survivorship probability) the observations also change. Likewise, we might think that a change in the observations suggests that the unseen probability has also changed.]
+
+.pull-right[
+![](12_Bayes_files/figure-html/unnamed-chunk-2-1.png)&lt;!-- --&gt;
+]
+
+---
+# Bayesian Philosophy
+
+We _factor_ the joint distribution into two parts, like this: 
+
+$$
+[y, \theta] = [y | \theta]\times [\theta]
+$$
+
+--
+
+* `\([y|\theta]\)` is the Likelihood
+
+--
+
+* `\([\theta]\)` is the prior
+
+--
+
+And finally apply Bayes Rule
+
+$$
+[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
+$$
+
+This numerator involves summing up the likelihood over **all possible prior values**. In other words, considering what DID happen relative to everything that _could have_ happened!
+
+---
+# Goal for today
+
+Today we will build intuition for Bayesian inference. By the end of today (or tomorrow!) you will have learned how to find, and work with, the posterior distributions of parameters
+
+We'll look at the following topics
+
+* Posterior via grid search
+
+--
+
+* Posterior via conjugate priors
+
+--
+
+* Metropolis and Metropolis-Hastings algorithms
+
+--
+
+_brief detour into Hierarchical Models!_
+
+--
+
+* Gibbs sampling
+
+---
+class: centre
+
+# Grid Search
+
+*Objective* intuition for how we actually multiply the prior by the likelihood to get a probability density function. 
+
+Grid search is very similar to our initial Maximum Likelihood procedures, with the addition of a prior
+
+---
+# Chick survival
+
+The Fake Petrel ( _Hydrobates inventus_ ) lays precisely 6 eggs. You have data on survivorship from 10 different nests:
+
+
+```r
+set.seed(1859)
+x_obs &lt;- rbinom(10, 6, 0.6)
+x_obs
+```
+
+```
+##  [1] 4 4 5 4 4 4 5 4 4 6
+```
+
+Our model is:
+
+$$
+\text{hatched}_{i} \sim \text{Binomial}(\theta, 6)
+$$
+Because we want the Bayesian posterior distribution, we also need a prior for `\(\theta\)`
+
+$$
+\theta \sim \text{Uniform}(0,1)
+$$
+
+We'll try several, but this is our starting point
+---
+
+Use grid search to find the posterior distribution of `\(\theta\)`, the probability that an egg successfully hatches. 
+
+# Steps
+1. make a vector of probabilities for `\(\theta\)` using `seq(from = 0, to = 1, length.out = n)`
+1. Think about the prior you might use. Start with `dunif(x, min = 0, max = 1)`.
+1. find the probability of each of these values of `\(\theta\)` via `dunif`
+1. find the likelihood for each of these values of `\(\theta\)` via `dbinom`
+1. multiply these two columns together
+1. normalize (divide by the sum)
+
+---
+# Notes and reminders
+
+A note on the Beta distribution: 
+
+$$
+\text{Beta}(\alpha = \mu\phi, \beta = (1 - \mu)\phi)
+$$
+
+* `\(\mu\)` the average probability
+* `\(\phi\)` the "concentration" around this value
+
+---
+class: center
+# conjugate priors
+![](assets/poohpiglet.png)
+---
+
+# Conjugate priors 
+
+Conjugate priors exist for many common probability distributions
+
+The posterior is the same distribution as the prior with new, updated parameters
+
+--
+
+&gt; it is embarassing to do an elaborate numerical procedure to obtain results that can be obtained on a napkin -- Hobbs and Hooten
+
+--
+
+![](assets/jinx.png)
+
+---
+
+`$$[\theta] = {\theta^{\alpha-1}(1-\theta)^{\beta-1} \over \text{Beta}(\alpha,\beta)}$$`
+`$$[y|\theta] = {n \choose y}\theta^y(1-\theta)^{n-y}$$`
+
+$$
+[y|\theta][\theta] \propto \theta^{\alpha-1}(1-\theta)^{\beta-1} \times \theta^y(1-\theta)^{n-y}
+$$
+
+$$
+[y|\theta][\theta] \propto  \theta^{y + \alpha-1}(1-\theta)^{n - y + \beta-1}
+$$
+
+$$
+[\theta|y] = \frac{\theta^{y + \alpha-1}(1-\theta)^{n - y + \beta-1}}{ \text{Beta}(\alpha + y,\beta + n-y)}
+$$
+---
+# Conjugate priors
+
+| prior      | likelihood | Posterior                                                                                                     |
+|-------------------|-----------------------|------------------------------------------------------------------|
+| `\(p ~\sim \text{Beta}(\alpha,\beta)\)`           | `\(y \sim \text{Binomial(p, N)}\)`           | `\(p \sim \text{Beta}(\alpha + \sum y, \beta + \sum (n- y)\)`                   |
+| `\(\lambda \sim \text{gamma}(\alpha, \beta)\)`          | `\(y \sim \text{Poisson}(\lambda)\)`  |  `\(\lambda \sim \text{gamma}(\alpha + \sum y, \beta + n)\)`       |
+
+---
+# Petrels again
+
+Lets go back to our Fake Petrel data
+
+
+```r
+set.seed(1859)
+x_obs &lt;- rbinom(10, 6, 0.6)
+x_obs
+```
+
+```
+##  [1] 4 4 5 4 4 4 5 4 4 6
+```
+
+Calculate the conjugate posterior and add it to the figure using `curve`. How does it compare to grid search.
+
+---
+# Predictions
+
+In both of these approaches, we end up with a _distribution_ for p. How can we use this to make predictions? 
+
+* sample values from your posterior for `\(p\)`
+* for each sampled value, sample a single surviving nest of 6 eggs
+* do this lots of times 
+
+_remember R is vectorized_ 
+
+--
+
+e.g. for prior `\(\mu = 0.3\)` and `\(\phi = 5\)`
+
+
+```r
+ps &lt;- rbeta(200, 0.3 * 5 + sum(x_obs),
+            0.7 * 5 + sum(6 - x_obs))
+ys &lt;- rbinom(200, size = 6, prob = ps)
+```
+
+---
+# Exercise with your data
+
+does the Distribution you chose have a conjugate prior? Can you estimate the posterior distribution this way? 
+
+---
+class: inverse, centre
+
+# Markov Chain Monte Carlo
+
+---
+# Remember Simulated Annealing
+
+Your grasp of simulated annealing will extend to understanding MCMC methods as well! 
+
+Three things to keep in mind: 
+
+* We can work with a function even if it is too complex to analyze directly
+
+--
+
+* the *Effeciency* of an algorithm is key, especially when problems grow
+
+--
+
+* We get several knobs to turn to control how an algorithm behaves. Another thing to think about as you perform modelling! 
+
+---
+
+# MCMC "magic"
+
+The objective of MCMC algorithm is to simulate parameters from a complex posterior distribution.
+
+--
+
+Rather than measure the *absolute* probability of different parameter values:
+
+$$
+[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
+$$
+
+we sample, and evaluate the *relative* probability of two possible parameter values:
+
+$$
+\frac{[\theta^{new}|y]}{[\theta^k|y]} = \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}
+$$
+
+In this way, we can sample a probability distribution ( `\([\theta|y]\)` ) using only something _proportional_ to that distribution ( `\([y|\theta][\theta]\)` ) 
+
+---
+# The Metropolis Algorithm
+
+* Draw `\(\theta^{new}\)` from a _symmetric_ distribution centered on `\(\theta^{k}\)` (i.e. in the `\(k\)`th interation, the current value)
+e.g. `\(\theta^{new} \sim N(\theta^{k}, \sigma_{tune})\)`
+* Calculate the ratio R:
+
+$$
+R = \text{min}\left( 1, \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}\right)
+$$
+
+This is the probability of acceptance. In other words, if the ratio is better always take it. If the ratio is less than 1, there's a chance we'll take it anyway.
+
+* Test to see if `runif(1, min=0, max=1)` `\(&lt; R\)`. if so, set `\(\theta^{k + 1} = \theta^{new}\)`
+
+* **Discussion question**: why should we accept "worse" parameter values? Why is it good to sometimes stay in the same place? 
+
+---
+class: center 
+# Visualizing
+
+&lt;img src="12_Bayes_files/figure-html/unnamed-chunk-6-1.png" width="504" /&gt;
+
+---
+class: center 
+
+# Visualizing
+
+&lt;img src="12_Bayes_files/figure-html/unnamed-chunk-7-1.png" width="504" /&gt;
+
+---
+# quick reminder! 
+
+--
+
+* the candidate distribution is not the prior
+
+--
+
+* the candidate distribution is not the prior
+
+--
+
+* the candidate distribution makes new values but it's not the prior, you still have to put the values it produces into the likelihood and the prior
+
+---
+# Now: to math! 
+
+$$
+r = \frac{\text{Likelihood}(\text{data}|\theta^{new}) \times \text{Prior}(\theta^{new}, \alpha, \beta)}{\text{Likelihood}(\text{data}|\theta^{old}) \times \text{Prior}(\theta^{old}, \alpha, \beta)}
+$$
+
+* here I'm using `\(\alpha\)` and `\(\beta\)` to mean any prior parameters. They don't change!
+
+* plug the new candidate value into the likelihood and multiply by the prior
+
+---
+# Try it out!
+
+Use the Metropolis algorithm to fit the following data on the Fictitious Leafhopper abundance on 5 plants:
+
+
+```r
+set.seed(1859)
+xs &lt;- rpois(5, 27)
+xs
+```
+
+```
+## [1] 23 24 22 16 29
+```
+
+$$
+`\begin{align}
+y &amp;\sim \text{Poisson}(e^{\alpha}) \\
+\alpha &amp;\sim \text{Normal}(10, 2)
+\end{align}`
+$$
+
+_suggestion_ use as a candidate distribution `\(\text{Normal}(\theta^k, \sigma_{tune})\)`
+
+This means making your guesses with `rnorm(1, mean = old_param, sd = tune)`
+
+**Compare your result to the conjugate posterior! you should get very similar shapes**
+
+---
+# Metropolis Hastings
+
+Sometimes you need an _asymmetrical_ distribution for your parameter. This happens when the parameter is bounded. 
+
+In this case, we need to adjust our calculation of `\(r\)`. Now in addition to the Likelihood and Prior, we have the Candidate distribution getting involved
+
+$$
+\frac{[y|\theta^{new}][\theta^{new}][\theta^{old}|\theta^{new}]}
+{[y|\theta^{old}][\theta^{old}][\theta^{old}|\theta^{new}]}
+$$ 
+
+.small[
+&lt;p&gt;
+$$
+r = \frac{\text{Likelihood}(\text{data}|\theta^{new}) \times \text{Prior}(\theta^{new}, \alpha, \beta) \times \text{Candidate}(\theta^{old}, \mu = \theta^{new}, \sigma_{tune})}{\text{Likelihood}(\text{data}|\theta^{old}) \times \text{Prior}(\theta^{old}, \alpha, \beta)\times \text{Candidate}(\theta^{new}, \mu = \theta^{old}, \sigma_{tune})}
+$$
+&lt;/p&gt;
+]
+
+then finally 
+$$
+R = \text{min}( 1, r)
+$$
+
+---
+# Try it out!
+
+Use the Metropolis-Hastings algorithm to fit the following data on the Fictitious Leafhopper abundance on 5 plants:
+
+
+```r
+set.seed(1859)
+xs &lt;- rpois(5, 27)
+xs
+```
+
+```
+## [1] 23 24 22 16 29
+```
+
+$$
+`\begin{align}
+y &amp;\sim \text{Poisson}(\lambda) \\
+\lambda &amp;\sim \text{Gamma}\left(\frac{25^2}{15^2}, \frac{25}{15^2}\right)
+\end{align}`
+$$
+
+_suggestion_ use as a candidate distribution `\(\text{LogNormal}(log(\theta^k), \sigma_{tune})\)`
+
+This means making your guesses with `rlnorm(1, mean = log(old_param), sd = tune)`
+
+**Compare your result to the conjugate posterior! you should get very similar shapes**
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "monokai",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
