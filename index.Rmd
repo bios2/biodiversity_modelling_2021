@@ -137,6 +137,11 @@ xaringanExtra::embed_xaringan(url = "slides/10_optimization.html", ratio = "16:9
 ```
 
 
+```{r slides-optimization-problem, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/11_optimization_problem.html", ratio = "16:9")
+```
+
+
 :::
 
 
