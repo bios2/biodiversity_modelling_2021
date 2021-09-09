@@ -14,9 +14,9 @@ output:
     toc_float: true
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+xaringanExtra::use_panelset()
 
 # Learn more about creating websites with Distill at:
 # https://rstudio.github.io/distill/website.html
@@ -25,7 +25,10 @@ knitr::opts_chunk$set(echo = FALSE)
 # https://rstudio.github.io/distill/publish_website.html#github-pages
 ```
 
-## Probabilities and distributions  
+::::: {.panelset}
+
+::: {.panel}
+[Probabilities and distributions]{.panel-name}
 
 **16 August**  
 
@@ -59,7 +62,8 @@ xaringanExtra::embed_xaringan(url = "slides/04_problem.html", ratio = "16:9")
 xaringanExtra::embed_xaringan(url = "slides/05_solutions.html", ratio = "16:9")
 ```
 
-### Univariate probability distributions
+
+#### Univariate probability distributions
 
 
 ```{r slides-distributions, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
@@ -67,7 +71,7 @@ xaringanExtra::embed_xaringan(url = "slides/06_distributions.html", ratio = "16:
 ```
 
 
-#### Continuous distributions
+##### Continuous distributions
 
 | distribution | positive or negative?       | Quick description                                              |
 |--------------|-----------------------------|----------------------------------------------------------------|
@@ -86,9 +90,11 @@ xaringanExtra::embed_xaringan(url = "slides/06_distributions.html", ratio = "16:
 | Negative Binomial | Positive              | Counts of things as in the Poisson, but more variable. Also: the number of trials till a certain number of successes. |
 | Binomial          | Positive              | Number of "successes" out of a number of trials, when probability of success is always the same                       |
 
+:::
 
+:::{.panel}
 
-## Maximum likelihood methods  
+[Maximum likelihood methods]{.panel-name}
 
 **18 August**  
 
@@ -109,14 +115,27 @@ xaringanExtra::embed_xaringan(url = "slides/08_likelihood_problem.html", ratio =
 xaringanExtra::embed_xaringan(url = "slides/09_likelihood_solution.html", ratio = "16:9")
 ```
 
-## Optimization
+:::
+
+:::{.panel}
+
+[Optimization]{.panel-name}
 
 Once we know how to calculate likelihood, we can apply this to a very general statistical practice: how do we find parameters that maximize the likelihood of the data? this is an optimization problem 
 
-```
-August 20	Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.
+:::
 
-August 23	Bayesian statistics: how to properly represent uncertainty in ecological models.
 
-August 25	Sampling algorithms: evaluating posterior distributions by your own.
-```
+:::{.panel}
+
+[Bayesian statistics]{.panel-name}
+
+:::
+
+:::{.panel}
+
+[Sampling algorithms]{.panel-name}
+
+:::
+
+::::

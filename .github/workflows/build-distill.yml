@@ -57,3 +57,4 @@ jobs:
         with:
           BRANCH: gh-pages
           FOLDER: docs
+          SINGLE_COMMIT: true
