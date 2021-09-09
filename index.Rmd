@@ -131,6 +131,12 @@ xaringanExtra::embed_xaringan(url = "slides/09_likelihood_solution.html", ratio 
 
 Once we know how to calculate likelihood, we can apply this to a very general statistical practice: how do we find parameters that maximize the likelihood of the data? this is an optimization problem 
 
+
+```{r slides-optimization, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/10_optimization.html", ratio = "16:9")
+```
+
+
 :::
 
 
