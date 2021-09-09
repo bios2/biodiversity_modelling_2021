@@ -159,6 +159,10 @@ xaringanExtra::embed_xaringan(url = "slides/13_generative.html", ratio = "16:9")
 ```
 
 
+```{r slides-tree-problem, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/14_tree_models.html", ratio = "16:9")
+```
+
 :::
 
 :::{.panel}
