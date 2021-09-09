@@ -2349,6 +2349,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
     color: var(--hover-color, white);
   }</style>
   <!--/radix_placeholder_distill-->
+  <link href="site_libs/panelset-0.2.6/panelset.css" rel="stylesheet" />
+  <script src="site_libs/panelset-0.2.6/panelset.js"></script>
   <script src="site_libs/clipboard-2.0.6/clipboard.min.js"></script>
   <link href="site_libs/shareon-1.4.1/shareon.min.css" rel="stylesheet" />
   <script src="site_libs/shareon-1.4.1/shareon.min.js"></script>
@@ -2411,19 +2413,9 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </div>
 
 <div class="d-article">
-<div class="d-contents d-contents-float">
-<nav class="l-text toc figcaption" id="TOC">
-<h3>Contents</h3>
-<ul>
-<li><a href="#probabilities-and-distributions">Probabilities and distributions</a><ul>
-<li><a href="#univariate-probability-distributions">Univariate probability distributions</a></li>
-</ul></li>
-<li><a href="#maximum-likelihood-methods">Maximum likelihood methods</a></li>
-<li><a href="#optimization">Optimization</a></li>
-</ul>
-</nav>
-</div>
-<h2 id="probabilities-and-distributions">Probabilities and distributions</h2>
+<div class="panelset">
+<div class="panel">
+<p><span class="panel-name">Probabilities and distributions</span></p>
 <p><strong>16 August</strong></p>
 <p>know your data, define your problem.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -2459,14 +2451,14 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <script>fitvids('.shareagain', {players: 'iframe'});</script>
 </div>
 </div>
-<h3 id="univariate-probability-distributions">Univariate probability distributions</h3>
+<h4 id="univariate-probability-distributions">Univariate probability distributions</h4>
 <div class="layout-chunk" data-layout="l-body">
 <div class="shareagain" style="min-width:300px;margin:1em auto;">
 <iframe src="slides/06_distributions.html" width="1600" height="900" style="border:2px solid currentColor;" loading="lazy" allowfullscreen></iframe>
 <script>fitvids('.shareagain', {players: 'iframe'});</script>
 </div>
 </div>
-<h4 id="continuous-distributions">Continuous distributions</h4>
+<h5 id="continuous-distributions">Continuous distributions</h5>
 <table style="width:100%;">
 <colgroup>
 <col style="width: 13%" />
@@ -2540,7 +2532,9 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </tr>
 </tbody>
 </table>
-<h2 id="maximum-likelihood-methods">Maximum likelihood methods</h2>
+</div>
+<div class="panel">
+<p><span class="panel-name">Maximum likelihood methods</span></p>
 <p><strong>18 August</strong></p>
 <p>write down equations for your model.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -2561,14 +2555,19 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <script>fitvids('.shareagain', {players: 'iframe'});</script>
 </div>
 </div>
-<h2 id="optimization">Optimization</h2>
+</div>
+<div class="panel">
+<p><span class="panel-name">Optimization</span></p>
 <p>Once we know how to calculate likelihood, we can apply this to a very general statistical practice: how do we find parameters that maximize the likelihood of the data? this is an optimization problem</p>
-<pre><code>August 20   Optimization algorithms: reveal the capacities of computers to solve complex problems numerically.
-
-August 23   Bayesian statistics: how to properly represent uncertainty in ecological models.
-
-August 25   Sampling algorithms: evaluating posterior distributions by your own.</code></pre>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+</div>
+<div class="panel">
+<p><span class="panel-name">Bayesian statistics</span></p>
+</div>
+<div class="panel">
+<p><span class="panel-name">Sampling algorithms</span></p>
+</div>
+</div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
