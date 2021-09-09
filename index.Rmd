@@ -25,6 +25,12 @@ xaringanExtra::use_panelset()
 # https://rstudio.github.io/distill/publish_website.html#github-pages
 ```
 
+## Resources and exercises
+
+
+
+## Slides and lecture materials
+
 ::::: {.panelset}
 
 ::: {.panel}
