@@ -173,6 +173,12 @@ xaringanExtra::embed_xaringan(url = "slides/14_tree_models.html", ratio = "16:9"
 xaringanExtra::embed_xaringan(url = "slides/15_mcmc.html", ratio = "16:9")
 ```
 
+
+```{r slides-definitions, echo=FALSE, fig.cap="[Slides](slides/index.html)"}
+xaringanExtra::embed_xaringan(url = "slides/16_stan.html", ratio = "16:9")
+```
+
+
 :::
 
 ::::
