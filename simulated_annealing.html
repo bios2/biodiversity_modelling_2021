@@ -270,7 +270,7 @@ $(document).ready(function () {
 <div id="doms-solution" class="section level3">
 <h3>Dom’s Solution</h3>
 <pre class="r"><code># Load the data 
-data &lt;- read.table(&quot;https://raw.githubusercontent.com/bios2/bios2.github.io/master/_BiodiversityModelling/01_probabilities/01-introduction/data/hemlock.txt&quot;, header = TRUE)
+data &lt;- read.table(&quot;data/hemlock.txt&quot;, header = TRUE)
 obs = data[,2]
 L = data[,1]
 
@@ -355,14 +355,17 @@ add_model(1000)</code></pre>
 </div>
 <div id="andrews-approach" class="section level2">
 <h2>Andrew’s Approach</h2>
+<p>Rather than using the hemlock data, this example uses 42 random numbers, and tries to identify the known mean of <strong>19</strong>.</p>
 <p><code>DEFINE function to optimize h(X)</code></p>
-<pre class="r"><code>fake_xs &lt;- rnorm(42, 19, 4)
+<pre class="r"><code>set.seed(1316)
+
+fake_xs &lt;- rnorm(42, 19, 4)
 
 loglike_numbers &lt;- function(numbers, mu) sum(dnorm(x = numbers, mean = mu, sd = 4, log = TRUE))
 
 
 loglike_numbers(fake_xs, 7)</code></pre>
-<pre><code>## [1] -317.7369</code></pre>
+<pre><code>## [1] -329.7753</code></pre>
 <pre class="r"><code>library(tidyverse)
 
 tibble(possible_mus = -3:30) %&gt;% 
@@ -423,7 +426,7 @@ keep_neg_diff &lt;- function(diff, Tmp){
 }
 
 keep_neg_diff(-30, Tmp = 40)</code></pre>
-<pre><code>## [1] TRUE</code></pre>
+<pre><code>## [1] FALSE</code></pre>
 <pre class="r"><code>keep_neg_diff(10, Tmp = 0)</code></pre>
 <pre><code>## Error in keep_neg_diff(10, Tmp = 0): diff &lt; 0 is not TRUE</code></pre>
 <pre class="r"><code>## function to take x0 and x1 and a function and temp and return either x0 (reject) or x1 ( accept)
