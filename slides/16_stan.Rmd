@@ -1,0 +1,297 @@
+---
+title: "Stan"
+author: "Willian Vieira"
+date: "August 26th, 2021"
+output:
+  xaringan::moon_reader:
+    css: [default, assets/ecl707.css, "hygge"]
+    lib_dir: assets
+    seal: false
+    nature:
+      highlightStyle: solarized-light
+      highlightLines: true
+      countIncrementalSlides: false
+      beforeInit: "assets/macros.js"
+---
+
+
+```{r setup, include=FALSE}
+xaringanExtra::use_share_again()
+xaringanExtra::style_share_again(
+  share_buttons = c("twitter", "linkedin", "pocket")
+)
+```
+
+class: title-slide, middle
+
+<style type="text/css">
+  .title-slide {
+    background-image: url('assets/img/bg.jpg');
+    background-color: #23373B;
+    background-size: contain;
+    border: 0px;
+    background-position: 600px 0;
+    line-height: 1;
+  }
+</style>
+
+# lab:
+
+<hr width="65%" align="left" size="0.3" color="orange"></hr>
+
+## How to Stan
+
+<hr width="65%" align="left" size="0.3" color="orange" style="margin-bottom:40px;" alt="@Martin Sanchez"></hr>
+
+.instructors[
+  **ECL707/807** - Willian Vieira
+]
+
+<img src="assets/img/logo.png" width="8%" style="margin-top:20px;"></img>
+
+---
+
+
+# Outline
+
+- What is Stan?
+- HMC
+- Your first Stan code
+- Basic diagnostics
+
+--
+
+.center[
+  ![:scale 50%](https://media0.giphy.com/media/MBlSpxW9dqsiV8Vg4y/giphy.gif?cid=ecf05e47t6xlncg7z037ewh6ksp3fdfuh3420ngjr59407dn&rid=giphy.gif&ct=g)
+]
+
+---
+class: middle, center, inverse
+
+# What is Stan?
+<hr width="100%" align="left" size="0.3" color="orange"></hr>
+
+![:scale 15%](https://mc-stan.org/images/stan_logo.png)
+
+---
+# Stan
+
+[https://mc-stan.org/](https://mc-stan.org/)
+
+> A comprehensive software ecosystem aimed at facilitating the application of Bayesian inference
+
+Full Bayesian statistical inference with MCMC sampling (but not only)
+
+Integrated with most data analysis languages (R, Python, MATLAB, Julia, Stata)
+
+--
+
+#### Why Stan?
+
+Open source
+
+--
+
+.font120[Extensive documentation]
+
+--
+
+.font140[Powerful sampling algorithm]
+
+--
+
+.font160[Large and active online community!]
+
+
+---
+class: middle, center, inverse
+
+# Hamiltonian Monte Carlo (HMC)
+<hr width="100%" align="left" size="0.3" color="orange"></hr>
+
+---
+# HMC
+
+Metropolis and Gibbs limitations:
+
+- A lot of tuning to find the best spot between large and small steps
+- Inefficient in high-dimensional spaces
+- Can't travel long distances between isolated local minimums
+
+--
+
+**Hamiltonian Monte Carlo**:
+
+- Uses a gradient-based MCMC to reduce the random walk (hence autocorrelation)
+
+  - Static HMC
+
+  - No-U-Turn Sampler (NUTS)
+
+--
+
+- Don't get it? [Viz it!](https://arogozhnikov.github.io/2016/12/19/markov_chain_monte_carlo.html)
+
+---
+class: middle, center, inverse
+
+# Time to Stan!
+<hr width="100%" align="left" size="0.3" color="orange"></hr>
+
+
+---
+# The model first
+
+$$
+\begin{align}
+\text{height} &\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &= \frac{aL}{a/s + L} \\
+\sigma_{height} & \sim \text{cauchy}(0, 2)\\
+a               & \sim \text{Normal}(400, 200)\\
+s               & \sim \text{Uniform}(0, 30)\\
+\end{align}
+$$
+
+---
+# Stan code
+
+```{r,eval=F}
+data{
+
+}
+parameters{
+
+}
+model{
+
+}
+```
+
+---
+# Data block
+
+.font70[
+$$
+\begin{align}
+\text{height} &\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &= \frac{aL}{a/s + L} \\
+\sigma_{height} & \sim \text{cauchy}(0, 2)\\
+a               & \sim \text{Normal}(400, 200)\\
+s               & \sim \text{Uniform}(0, 30)\\
+\end{align}
+$$
+]
+
+```{c,eval=F}
+data{
+  int<lower = 1> N; // size of response var
+  vector<lower = 0, upper = 400>[N] Y; // response var
+  vector<lower = 0, upper = 100>[N] light; // predict var
+}
+```
+
+`real`: continuous values
+
+`int`: integer values
+
+---
+# Parameters block
+
+.font70[
+$$
+\begin{align}
+\text{height} &\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &= \frac{aL}{a/s + L} \\
+\sigma_{height} & \sim \text{cauchy}(0, 2)\\
+a               & \sim \text{Normal}(400, 200)\\
+s               & \sim \text{Uniform}(0, 30)\\
+\end{align}
+$$
+]
+
+```{c,eval=F}
+parameters
+{
+	real<lower = 0> a; // maximum growth rate
+	real<lower = 0> s; // initial slope
+	real<lower = 0> sigma; // Variance among individuals
+}
+```
+
+
+---
+# Model block
+
+.font70[
+$$
+\begin{align}
+\text{height} &\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &= \frac{aL}{a/s + L} \\
+\sigma_{height} & \sim \text{cauchy}(0, 2)\\
+a               & \sim \text{Normal}(400, 200)\\
+s               & \sim \text{Uniform}(0, 30)\\
+\end{align}
+$$
+]
+
+```{c,eval=F}
+model
+{
+    // define mean of the model
+    vector[N] Mean;
+
+	// Priors
+	a ~ normal(400, 200);
+    s ~ uniform(0, 30);
+	sigma ~ cauchy(0, 2);
+    
+	// Likelihood
+    for(i in 1:N)
+        Mean[i] = (a * light[i])/((a/s) + light[i]);
+
+    // Model
+    for(i in 1:N)
+        Y[i] ~ lognormal(log(Mean[i]), log(sigma));
+}
+```
+
+---
+# Stan code
+
+.font90[
+```{c,eval=F}
+data
+{
+	int<lower = 1> N; // size of response var
+
+	vector<lower = 0, upper = 400>[N] Y; // response var
+	vector<lower = 0, upper = 100>[N] light; // predict var
+}
+
+parameters
+{
+	real<lower = 0> a; // maximum growth rate
+	real<lower = 0> s; // initial slope
+	real<lower = 0> sigma; // Variance among individuals
+}
+
+model
+{
+    // define mean of the model
+    vector[N] Mean;
+
+	// Priors
+	a ~ normal(400, 200);
+    s ~ uniform(0, 30);
+	sigma ~ cauchy(0, 2);
+    
+	// Likelihood
+    for(i in 1:N)
+        Mean[i] = (a * light[i])/((a/s) + light[i]);
+
+    // Model
+    for(i in 1:N)
+        Y[i] ~ lognormal(log(Mean[i]), log(sigma));
+}
+```
+]
