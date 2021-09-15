@@ -103,11 +103,13 @@ add_model(1000)
 
 ## Andrew's Approach
 
-
+Rather than using the hemlock data, this example uses 42 random numbers, and tries to identify the known mean of **19**.
 
 `DEFINE function to optimize h(X)`
 
 ```{r}
+
+set.seed(1316)
 
 fake_xs <- rnorm(42, 19, 4)
 
