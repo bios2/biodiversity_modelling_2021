@@ -1,0 +1,19 @@
+---
+title: "Introduction to the Metropolis Algorithm"
+author: "Andrew"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Statistical field work -- collecting a wild distribution! 
+
+**Step 1.** Think of a way you can collect some numbers. These should be numbers that can collect yourself -- no simulation, and no data from the internet!  Things like the weights of shoes in your house, people on a train car, time between shots on goal in a hockey game. Choose something you like, and which you can measure in a relatively brief period of time.
+
+**Step 2.** Think about the kind of statistical distribution that might represent this phenomenon! Write it down.  Why does this distribution seem to match your data? is it constrained in some way? 
+
+**Step 3.** Collect some observations -- aim for a good number, at least 15 or so.
+
+**Step 4.** Type in these data and visualize them. Do they match your hypothesized distribution? How do you know? 
