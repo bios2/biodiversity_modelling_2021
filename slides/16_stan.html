@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Stan</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Willian Vieira" />
+    <link href="assets/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="assets/remark-css-0.0.1/hygge.css" rel="stylesheet" />
+    <script src="assets/clipboard-2.0.6/clipboard.min.js"></script>
+    <link href="assets/shareon-1.4.1/shareon.min.css" rel="stylesheet" />
+    <script src="assets/shareon-1.4.1/shareon.min.js"></script>
+    <link href="assets/xaringanExtra-shareagain-0.2.6/shareagain.css" rel="stylesheet" />
+    <script src="assets/xaringanExtra-shareagain-0.2.6/shareagain.js"></script>
+    <link rel="stylesheet" href="assets/ecl707.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+
+class: title-slide, middle
+
+&lt;style type="text/css"&gt;
+  .title-slide {
+    background-image: url('assets/img/bg.jpg');
+    background-color: #23373B;
+    background-size: contain;
+    border: 0px;
+    background-position: 600px 0;
+    line-height: 1;
+  }
+&lt;/style&gt;
+
+# lab:
+
+&lt;hr width="65%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
+
+## How to Stan
+
+&lt;hr width="65%" align="left" size="0.3" color="orange" style="margin-bottom:40px;" alt="@Martin Sanchez"&gt;&lt;/hr&gt;
+
+.instructors[
+  **ECL707/807** - Willian Vieira
+]
+
+&lt;img src="assets/img/logo.png" width="8%" style="margin-top:20px;"&gt;&lt;/img&gt;
+
+---
+
+
+# Outline
+
+- What is Stan?
+- HMC
+- Your first Stan code
+- Basic diagnostics
+
+--
+
+.center[
+  ![:scale 50%](https://media0.giphy.com/media/MBlSpxW9dqsiV8Vg4y/giphy.gif?cid=ecf05e47t6xlncg7z037ewh6ksp3fdfuh3420ngjr59407dn&amp;rid=giphy.gif&amp;ct=g)
+]
+
+---
+class: middle, center, inverse
+
+# What is Stan?
+&lt;hr width="100%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
+
+![:scale 15%](https://mc-stan.org/images/stan_logo.png)
+
+---
+# Stan
+
+[https://mc-stan.org/](https://mc-stan.org/)
+
+&gt; A comprehensive software ecosystem aimed at facilitating the application of Bayesian inference
+
+Full Bayesian statistical inference with MCMC sampling (but not only)
+
+Integrated with most data analysis languages (R, Python, MATLAB, Julia, Stata)
+
+--
+
+#### Why Stan?
+
+Open source
+
+--
+
+.font120[Extensive documentation]
+
+--
+
+.font140[Powerful sampling algorithm]
+
+--
+
+.font160[Large and active online community!]
+
+
+---
+class: middle, center, inverse
+
+# Hamiltonian Monte Carlo (HMC)
+&lt;hr width="100%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
+
+---
+# HMC
+
+Metropolis and Gibbs limitations:
+
+- A lot of tuning to find the best spot between large and small steps
+- Inefficient in high-dimensional spaces
+- Can't travel long distances between isolated local minimums
+
+--
+
+**Hamiltonian Monte Carlo**:
+
+- Uses a gradient-based MCMC to reduce the random walk (hence autocorrelation)
+
+  - Static HMC
+
+  - No-U-Turn Sampler (NUTS)
+
+--
+
+- Don't get it? [Viz it!](https://arogozhnikov.github.io/2016/12/19/markov_chain_monte_carlo.html)
+
+---
+class: middle, center, inverse
+
+# Time to Stan!
+&lt;hr width="100%" align="left" size="0.3" color="orange"&gt;&lt;/hr&gt;
+
+
+---
+# The model first
+
+$$
+`\begin{align}
+\text{height} &amp;\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &amp;= \frac{aL}{a/s + L} \\
+\sigma_{height} &amp; \sim \text{cauchy}(0, 2)\\
+a               &amp; \sim \text{Normal}(400, 200)\\
+s               &amp; \sim \text{Uniform}(0, 30)\\
+\end{align}`
+$$
+
+---
+# Stan code
+
+
+```r
+data{
+
+}
+parameters{
+
+}
+model{
+
+}
+```
+
+---
+# Data block
+
+.font70[
+$$
+`\begin{align}
+\text{height} &amp;\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &amp;= \frac{aL}{a/s + L} \\
+\sigma_{height} &amp; \sim \text{cauchy}(0, 2)\\
+a               &amp; \sim \text{Normal}(400, 200)\\
+s               &amp; \sim \text{Uniform}(0, 30)\\
+\end{align}`
+$$
+]
+
+
+```c
+data{
+  int&lt;lower = 1&gt; N; // size of response var
+  vector&lt;lower = 0, upper = 400&gt;[N] Y; // response var
+  vector&lt;lower = 0, upper = 100&gt;[N] light; // predict var
+}
+```
+
+`real`: continuous values
+
+`int`: integer values
+
+---
+# Parameters block
+
+.font70[
+$$
+`\begin{align}
+\text{height} &amp;\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &amp;= \frac{aL}{a/s + L} \\
+\sigma_{height} &amp; \sim \text{cauchy}(0, 2)\\
+a               &amp; \sim \text{Normal}(400, 200)\\
+s               &amp; \sim \text{Uniform}(0, 30)\\
+\end{align}`
+$$
+]
+
+
+```c
+parameters
+{
+	real&lt;lower = 0&gt; a; // maximum growth rate
+	real&lt;lower = 0&gt; s; // initial slope
+	real&lt;lower = 0&gt; sigma; // Variance among individuals
+}
+```
+
+
+---
+# Model block
+
+.font70[
+$$
+`\begin{align}
+\text{height} &amp;\sim \text{LogNormal}(\text{log}(\mu), \sigma_{height}) \\
+\mu &amp;= \frac{aL}{a/s + L} \\
+\sigma_{height} &amp; \sim \text{cauchy}(0, 2)\\
+a               &amp; \sim \text{Normal}(400, 200)\\
+s               &amp; \sim \text{Uniform}(0, 30)\\
+\end{align}`
+$$
+]
+
+
+```c
+model
+{
+    // define mean of the model
+    vector[N] Mean;
+
+	// Priors
+	a ~ normal(400, 200);
+    s ~ uniform(0, 30);
+	sigma ~ cauchy(0, 2);
+    
+	// Likelihood
+    for(i in 1:N)
+        Mean[i] = (a * light[i])/((a/s) + light[i]);
+
+    // Model
+    for(i in 1:N)
+        Y[i] ~ lognormal(log(Mean[i]), log(sigma));
+}
+```
+
+---
+# Stan code
+
+.font90[
+
+```c
+data
+{
+	int&lt;lower = 1&gt; N; // size of response var
+
+	vector&lt;lower = 0, upper = 400&gt;[N] Y; // response var
+	vector&lt;lower = 0, upper = 100&gt;[N] light; // predict var
+}
+
+parameters
+{
+	real&lt;lower = 0&gt; a; // maximum growth rate
+	real&lt;lower = 0&gt; s; // initial slope
+	real&lt;lower = 0&gt; sigma; // Variance among individuals
+}
+
+model
+{
+    // define mean of the model
+    vector[N] Mean;
+
+	// Priors
+	a ~ normal(400, 200);
+    s ~ uniform(0, 30);
+	sigma ~ cauchy(0, 2);
+    
+	// Likelihood
+    for(i in 1:N)
+        Mean[i] = (a * light[i])/((a/s) + light[i]);
+
+    // Model
+    for(i in 1:N)
+        Y[i] ~ lognormal(log(Mean[i]), log(sigma));
+}
+```
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="assets/macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "solarized-light",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
