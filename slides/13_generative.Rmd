@@ -42,7 +42,7 @@ class: title-slide, middle
   Andrew MacDonald, Dominique Gravel
 ]
 
-<img src="assets/img/logo.png" width="25%" style="margin-top:20px;"></img>
+<img src="assets/img/logo.png" width="25%" style="margin-top:20px;"></img> <img src="assets/img/Bios2_reverse.png" width="23%" style="margin-top:20px;margin-left:35px"></img>
 
 ---
 # Generative models
