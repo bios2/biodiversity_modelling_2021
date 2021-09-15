@@ -16,6 +16,9 @@ RoxygenNote: 7.1.1
 Imports: 
     brms,
     ggplot2,
-    xaringanExtra (>= 0.5.4)
+    xaringan,
+    xaringanExtra (>= 0.5.4),
+    tidyverse,
+    ggdag
 Remotes:  
     gadenbuie/xaringanExtra
