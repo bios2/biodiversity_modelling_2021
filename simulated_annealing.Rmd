@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # Load the data 
-data <- read.table("https://raw.githubusercontent.com/bios2/bios2.github.io/master/_BiodiversityModelling/01_probabilities/01-introduction/data/hemlock.txt", header = TRUE)
+data <- read.table("data/hemlock.txt", header = TRUE)
 obs = data[,2]
 L = data[,1]
 
