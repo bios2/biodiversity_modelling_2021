@@ -51,7 +51,7 @@ jobs:
 
       - name: Build slides
         run: |
-          lapply(dir("slides", pattern = "*.Rmd", full.names = TRUE), rmarkdown::render)
+          lapply(dir("slides", pattern = "*.Rmd", full.names = TRUE), function(x) rmarkdown::render(input = x))
         shell: Rscript {0}
 
       - name: Build Distill website
