@@ -36,9 +36,6 @@ ggplot(grid_searched, aes(x = p, y = likelihood)) +
 ggplot(grid_searched, aes(x = p, y = post)) + geom_line() +
   geom_line(aes(y = density_p))
 
-sum(grid_searched$post)
-grid_searched$density_p %>% sum
-
 
 # calculate conjugate posterior
 ## prior  = dbeta(1, 1)
