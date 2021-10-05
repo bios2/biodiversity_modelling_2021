@@ -1,5 +1,5 @@
 ---
-title: "Introduction to the Metropolis Algorithm"
+title: "The Simulated Annealing Algorithm"
 author: "Andrew"
 output: html_document
 ---
@@ -7,8 +7,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-## Code for the Simulated Annealing Algorithm
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)

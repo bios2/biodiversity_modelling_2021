@@ -1,5 +1,5 @@
 ---
-title: "Introduction to the Metropolis Algorithm"
+title: "Statistical field work -- capture a wild distribution!"
 author: "Andrew"
 output: html_document
 ---
@@ -7,8 +7,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-## Statistical field work -- collecting a wild distribution! 
 
 **Step 1.** Think of a way you can collect some numbers. These should be numbers that can collect yourself -- no simulation, and no data from the internet!  Things like the weights of shoes in your house, people on a train car, time between shots on goal in a hockey game. Choose something you like, and which you can measure in a relatively brief period of time.
 
