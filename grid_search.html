@@ -12,7 +12,7 @@
 <meta name="author" content="Andrew" />
 
 
-<title>Statistical field work – capture a wild distribution!</title>
+<title>Grid Search in the tidyverse</title>
 
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -259,25 +259,52 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Statistical field work – capture a wild distribution!</h1>
+<h1 class="title toc-ignore">Grid Search in the tidyverse</h1>
 <h4 class="author">Andrew</h4>
 
 </div>
 
 
-<p><strong>Step 1.</strong> Think of a way you can collect some numbers. These should be numbers that can collect yourself – no simulation, and no data from the internet! Things like the weights of shoes in your house, people on a train car, time between shots on goal in a hockey game. Choose something you like, and which you can measure in a relatively brief period of time.</p>
-<p><strong>Step 2.</strong> Think about the kind of statistical distribution that might represent this phenomenon! Write it down. Why does this distribution seem to match your data? is it constrained in some way?</p>
-<p><strong>Step 3.</strong> Collect some observations – aim for a good number, at least 15 or so.</p>
-<p><strong>Step 4.</strong> Type in these data and visualize them. Do they match your hypothesized distribution? How do you know?</p>
-<div id="part-2" class="section level3">
-<h3>Part 2</h3>
-</div>
-<div id="statistical-field-work-exploring-your-dataset" class="section level2">
-<h2>Statistical field work – exploring your dataset</h2>
-<p><strong>Step 1.</strong> Return to your hypothesized distribution. Find its random number generation function (e.g. <code>rbinom()</code> for the Binomial Distribution). Experiment with different parameters values to create data that looks close to your own data.</p>
-<p><strong>Step 2.</strong> Attempt to fit the same parameters by Maximum likelihood. If you distribution has two parameters, fix one and find the Maximum Likelihood value of the other. <strong>Stretch goal</strong> Try to fit both of them at once.</p>
-<p><strong>Step 3.</strong> Look at the help for <code>?MASS::fitdistr()</code>. Try to use it to find your distribution parameters.</p>
-</div>
+<pre class="r"><code>x_obs &lt;- rbinom(10, 6, 0.6)
+x_obs</code></pre>
+<pre><code>##  [1] 2 5 3 3 5 4 2 5 2 2</code></pre>
+<pre class="r"><code>like_binom &lt;- function(p, d = x_obs){
+  exp(sum(dbinom(d, size = 6, prob = p, log = TRUE)))
+}
+
+
+grid_searched &lt;- tibble::tibble(
+  p = seq(from = 0.01, to = .99, length.out = 200),
+  density_p = dbeta(p, .03*20, (1-.03*20)),
+  likelihood = purrr::map_dbl(p, like_binom),
+  prior_times_likelihood = density_p * likelihood,
+  post = prior_times_likelihood / sum (prior_times_likelihood)
+)
+
+head(grid_searched$likelihood)</code></pre>
+<pre><code>## [1] 5.001731e-56 2.395835e-50 2.555232e-46 3.346653e-43 1.157941e-40
+## [6] 1.595398e-38</code></pre>
+<pre class="r"><code>library(ggplot2)
+ggplot(grid_searched, aes(x = p, y = likelihood)) +
+  geom_line() +
+  geom_line(aes(y = prior_times_likelihood), lwd = 2, col = &quot;darkred&quot;)  +
+  geom_line(aes(y = post), col = &quot;blue&quot;)</code></pre>
+<p><img src="grid_search_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(grid_searched, aes(x = p, y = post)) + geom_line() +
+  geom_line(aes(y = density_p))</code></pre>
+<p><img src="grid_search_files/figure-html/unnamed-chunk-1-2.png" width="672" /></p>
+<pre class="r"><code># calculate conjugate posterior
+## prior  = dbeta(1, 1)
+## posterior
+# dbeta(x, 1 + sum(xobs), 1 + sum(6 - xobs))
+
+
+ggplot(grid_searched, aes(x = p, y = post*200)) +
+  geom_line(col = &quot;red&quot;) +
+  stat_function(fun = function(x) dbeta(x,
+                                        1 + sum(x_obs),
+                                        1 + sum(6 - x_obs)))</code></pre>
+<p><img src="grid_search_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
 
 
 
