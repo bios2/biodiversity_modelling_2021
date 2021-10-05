@@ -33,6 +33,7 @@ xaringanExtra::use_panelset()
 * [Simulated annealing code](simulated_annealing.html), presented in 2 styles.
 * [Metropolis hastings code](metropolis_example.html)
 * [Grid search demo](grid_search.html)
+* [Excercise problems](exercise_questions.html)
 
 ## Slides and lecture materials
 

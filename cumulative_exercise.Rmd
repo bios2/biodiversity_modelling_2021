@@ -15,3 +15,14 @@ knitr::opts_chunk$set(echo = TRUE)
 **Step 3.** Collect some observations -- aim for a good number, at least 15 or so.
 
 **Step 4.** Type in these data and visualize them. Do they match your hypothesized distribution? How do you know? 
+
+### Part 2 
+
+
+## Statistical field work -- exploring your dataset
+
+**Step 1.** Return to your hypothesized distribution. Find its random number generation function (e.g. `rbinom()` for the Binomial Distribution). Experiment with different parameters values to create data that looks close to your own data.
+
+**Step 2.** Attempt to fit the same parameters by Maximum likelihood. If you distribution has two parameters, fix one and find the Maximum Likelihood value of the other. **Stretch goal** Try to fit both of them at once.
+
+**Step 3.** Look at the help for `?MASS::fitdistr()`. Try to use it to find your distribution parameters. 
