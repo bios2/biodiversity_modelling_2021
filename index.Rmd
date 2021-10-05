@@ -29,6 +29,39 @@ xaringanExtra::use_panelset()
 
 ## Resources and exercises
 
+**hemlock growth**
+```{r message=FALSE}
+hemlock <- readr::read_delim(
+  "https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/hemlock.txt", 
+  delim = " ",
+  col_names = c("x","light", "growth"), skip = 1)
+
+knitr::kable(head(hemlock, n = 3))
+```
+
+
+**Sutton trees** 
+```{r message=FALSE}
+sutton <- readr::read_csv2("https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/sutton.csv")
+
+knitr::kable(head(sutton, n = 3))
+```
+
+
+**States**
+```{r, message=FALSE}
+states <- readr::read_delim("https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/transitions.txt",
+                            delim = " ",
+                            col_names = c("x","ID", "temp", "state1",
+                                          "state2", "interval"),
+                            skip = 1)
+
+knitr::kable(head(states, n = 2))
+
+```
+
+
+
 * [Cumulative exercise](cumulative_exercise.html) in "collecting" a statistical distribution for use in practice.
 * [Simulated annealing code](simulated_annealing.html), presented in 2 styles.
 * [Metropolis hastings code](metropolis_example.html)
