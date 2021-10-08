@@ -30,7 +30,7 @@ xaringanExtra::use_panelset()
 ## Resources and exercises
 
 **hemlock growth**
-```{r message=FALSE, echo=TRUE}
+```{r message=FALSE, echo=TRUE, tidy.opts = list(blank = FALSE, width.cutoff = 60), tidy="formatR"}
 hemlock <- readr::read_delim(
   "https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/hemlock.txt", 
   delim = " ",
