@@ -30,7 +30,7 @@ xaringanExtra::use_panelset()
 ## Resources and exercises
 
 **hemlock growth**
-```{r message=FALSE}
+```{r message=FALSE, echo=TRUE}
 hemlock <- readr::read_delim(
   "https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/hemlock.txt", 
   delim = " ",
@@ -41,7 +41,7 @@ knitr::kable(head(hemlock, n = 3))
 
 
 **Sutton trees** 
-```{r message=FALSE}
+```{r message=FALSE, echo=TRUE}
 sutton <- readr::read_csv2("https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/sutton.csv")
 
 knitr::kable(head(sutton, n = 3))
@@ -49,7 +49,7 @@ knitr::kable(head(sutton, n = 3))
 
 
 **States**
-```{r, message=FALSE}
+```{r, message=FALSE, echo=TRUE}
 states <- readr::read_delim("https://raw.githubusercontent.com/bios2/biodiversity_modelling_2021/master/data/transitions.txt",
                             delim = " ",
                             col_names = c("x","ID", "temp", "state1",
