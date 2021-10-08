@@ -90,7 +90,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   
   
   
-  <meta name="article:author" content="Andrew"/>
+  <meta name="article:author" content="Andrew MacDonald"/>
   
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
   <meta property="og:title" content="Biodiversity Modelling Summer School 2021: At-home Statistical Workout 💪💪💪💪"/>
@@ -106,7 +106,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","author","output"]}},"value":[{"type":"character","attributes":{},"value":["At-home Statistical Workout 💪💪💪💪"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name"]}},"value":[{"type":"character","attributes":{},"value":["Andrew"]}]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_float"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","author","output"]}},"value":[{"type":"character","attributes":{},"value":["At-home Statistical Workout 💪💪💪💪"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name"]}},"value":[{"type":"character","attributes":{},"value":["Andrew MacDonald"]}]}]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc","toc_float"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[true]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -2361,7 +2361,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"At-home Statistical Workout 💪💪💪💪","authors":[{"author":"Andrew","authorURL":"#","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}]}
+{"title":"At-home Statistical Workout 💪💪💪💪","authors":[{"author":"Andrew MacDonald","authorURL":"#","affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}]}
 </script>
 
 <!--/radix_placeholder_front_matter-->
@@ -2391,7 +2391,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
 <div class="d-byline">
   
-  Andrew
+  Andrew MacDonald
   
 
 </div>
@@ -2401,29 +2401,24 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <nav class="l-text toc figcaption" id="TOC">
 <h3>Contents</h3>
 <ul>
-<li><a href="#one-parameter">One parameter</a><ul>
-<li><a href="#one-parameter-exponential-distribution">One-parameter exponential distribution</a></li>
-<li><a href="#monarch-butterfly-numbers">Monarch Butterfly numbers</a></li>
-<li><a href="#difference-between-two-normal-distributions-part-i">Difference between two normal distributions (part I)</a></li>
+<li><a href="#one-parameter">1. One parameter</a><ul>
+<li><a href="#the-patient-baby-birds">1.1 The patient baby birds</a></li>
+<li><a href="#monarch-butterfly-numbers">1.2 Monarch Butterfly numbers</a></li>
+<li><a href="#difference-between-two-normal-distributions-part-i">1.3 Difference between two normal distributions (part I)</a></li>
 <li><a href="#difference-between-two-normal-distributions-part-ii">Difference between two normal distributions part (II)</a></li>
 </ul></li>
 <li><a href="#two-parameters">Two parameters</a></li>
 </ul>
 </nav>
 </div>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>knitr</span><span class='fu'>::</span><span class='va'><a href='https://rdrr.io/pkg/knitr/man/opts_chunk.html'>opts_chunk</a></span><span class='op'>$</span><span class='fu'>set</span><span class='op'>(</span>echo <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
-</code></pre>
-</div>
-</div>
 <p>Here are some suggested ideas for how to work out your likelihood skills!</p>
 <p>They are divided into three sections: one, two and three parameters.</p>
 <p><strong>NOTE</strong> remember to consult the slides above for a step-by-step pseudocode approach</p>
 <p><strong>To do an exercise: </strong> copy and paste the R code into an R source file. Run it, then work with the data.frame it creates!</p>
-<h2 id="one-parameter">One parameter</h2>
-<h3 id="one-parameter-exponential-distribution">One-parameter exponential distribution</h3>
-<p>You are watching a female bird visiting her nest, bringing back food for nestlings. Every time she comes back you write down the number of minutes since the last visit. You watch for 20 consecutive visits. This species brings food once every 10 minutes, so six times an hour, and visits are prefectly random. This implies an Exponential distribution with a rate of <span class="math inline">\(6\text{visits} / 60\text{minutes}\)</span> so in other words <span class="math inline">\(0.1\)</span> visits per minute. Use maximum likelihood to confirm this number</p>
+<h2 id="one-parameter">1. One parameter</h2>
+<h3 id="the-patient-baby-birds">1.1 The patient baby birds</h3>
+<p>You are watching a female bird visiting her nest, bringing back food for nestlings. Every time she comes back you write down the number of minutes since the last visit. You watch for 20 consecutive visits. This species brings food once every 10 minutes, so six times an hour, and visits are perfectly random. This implies an Exponential distribution with a rate of <span class="math inline">\(6\text{visits} / 60\text{minutes}\)</span> so in other words <span class="math inline">\(0.1\)</span> visits per minute.</p>
+<p>Use maximum likelihood to confirm this number.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>visit_rate</span> <span class='op'>&lt;-</span> <span class='fl'>6</span><span class='op'>/</span><span class='fl'>60</span>
@@ -2437,12 +2432,12 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <p><img src="exercise_questions_files/figure-html5/bird-visits-1.png" width="624" /></p>
 </div>
 <p>Questions / thoughts:</p>
-<ol type="1">
-<li>Begin by trying only positive numbers in your algorithm.</li>
-<li>Run the the following <code>rexp(1, -1)</code>. What happens? Why?</li>
-<li>How would you constrain your algorithm to use only positive numbers?</li>
-</ol>
-<h3 id="monarch-butterfly-numbers">Monarch Butterfly numbers</h3>
+<ul>
+<li><strong>1.1.1</strong> Begin by trying only positive numbers in your algorithm.</li>
+<li><strong>1.1.2</strong> Run the the following <code>rexp(1, -1)</code>. What happens? Why?</li>
+<li><strong>1.1.3</strong> How would you constrain your algorithm to use only positive numbers?</li>
+</ul>
+<h3 id="monarch-butterfly-numbers">1.2 Monarch Butterfly numbers</h3>
 <p>You are concerned about Monarchs, so you’ve decided to count their eggs! You look on 50 milkweed plants in your neighbourhood to find them. The eggs follow a perfect Poisson distribution with a mean of 120 eggs per plant.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2454,14 +2449,21 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <span class='fu'><a href='https://rdrr.io/r/graphics/hist.html'>hist</a></span><span class='op'>(</span><span class='va'>counted_eggs</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="exercise_questions_files/figure-html5/unnamed-chunk-2-1.png" width="624" /></p>
+<p><img src="exercise_questions_files/figure-html5/unnamed-chunk-1-1.png" width="624" /></p>
 </div>
 <p>You want to use Maximum Likelihood to look at this distribution. You want to be extra careful, so you want to do it two ways.</p>
 <p>First, you try to fit a Poisson distribution like this:</p>
 <p><span class="math display">\[
 \text{eggs} \sim \text{Poisson}(\lambda)
 \]</span></p>
-<p>you do this by searching over values of lambda between 1 and 200</p>
+<p>you do this by searching over values of <span class="math inline">\(\lambda\)</span> between 1 and 200.</p>
+<p><strong>Questions</strong>:</p>
+<ul>
+<li><strong>1.2.1</strong> Write the expression for the maximum likelihood estimate of <span class="math inline">\(\lambda\)</span>.</li>
+<li><strong>1.2.2</strong> Describe how you will search between the values of 1 and 200 for the maximum likelihood estimate of <span class="math inline">\(\lambda\)</span>.</li>
+<li><strong>1.2.3</strong> Maximize the likelihood and recover the true value of 120.</li>
+</ul>
+<h4 id="monarch-butterflies-part-2">Monarch Butterflies Part 2</h4>
 <p>Lambda can’t be 0 or negative. You decide to replace the value of <span class="math inline">\(\lambda\)</span> with a function that is always greater than 0:</p>
 <p><span class="math display">\[
 f(x) = e^x
@@ -2471,18 +2473,19 @@ f(x) = e^x
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>3</span>, <span class='fl'>3</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="exercise_questions_files/figure-html5/unnamed-chunk-3-1.png" width="624" /></p>
+<p><img src="exercise_questions_files/figure-html5/unnamed-chunk-2-1.png" width="624" /></p>
 </div>
-<p>Since this function is always positive, and <span class="math inline">\(\lambda\)</span> is always positive, you decide to put the function in for the <span class="math inline">\(\lambda\)</span> of the Poisson:</p>
+<p>Since this function is always positive, and <span class="math inline">\(\lambda\)</span> is always positive, the function can take the place of <span class="math inline">\(\lambda\)</span> in your model.</p>
 <p><span class="math display">\[
 \text{eggs} \sim \text{Poisson}(e^x)
 \]</span></p>
 <p><strong>Questions</strong>:</p>
-<ol type="1">
-<li>Now what values should you use for <span class="math inline">\(x\)</span> ?</li>
-<li>Are your answers from the two methods the same?</li>
-</ol>
-<h3 id="difference-between-two-normal-distributions-part-i">Difference between two normal distributions (part I)</h3>
+<ul>
+<li><strong>1.2.4</strong> Now what values should you use for <span class="math inline">\(x\)</span> ?</li>
+<li><strong>1.2.5</strong> Find the Maximum Likelihood value of <span class="math inline">\(x\)</span>.</li>
+<li><strong>1.2.6</strong> Are your answers from the two methods the same? How can you tell?</li>
+</ul>
+<h3 id="difference-between-two-normal-distributions-part-i">1.3 Difference between two normal distributions (part I)</h3>
 <p>You add some fertilizer to plants, because experiments. This makes the plants grow more on average, because physiology. At the end of your experiment, you cut all the plants down and measure their dry biomass, because tradition.</p>
 <p>As a skilled botanist, you know that the standard deviation of the control plots will be exactly 5g, and the standard deviation of the treatment plants will be *<strong>exactly the same</strong>. You know that plants are on average 200g, and the fertilizer should increase this by 30g (a 15% increase).</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -2510,10 +2513,10 @@ f(x) = e^x
 </div>
 </div>
 <p><strong>Questions</strong></p>
-<ol type="1">
-<li>What is the likelihood for the observations? Consider that you know the control mean (<span class="math inline">\(\mu\)</span>), the standard deviation (<span class="math inline">\(\sigma\)</span>). What is missing? Call this missing quantity <span class="math inline">\(\alpha\)</span>.</li>
-<li>Use maximum likelihood to confirm that the difference is really 30g</li>
-</ol>
+<ul>
+<li><strong>1.3.1</strong> What is the likelihood for the observations? Consider that you know the control mean (<span class="math inline">\(\mu\)</span>), the standard deviation of both treatment and control (<span class="math inline">\(\sigma\)</span>). What is missing? Call this missing quantity <span class="math inline">\(\alpha\)</span>.</li>
+<li><strong>1.3.2</strong> Use maximum likelihood to confirm that the difference is really 30g.</li>
+</ul>
 <h3 id="difference-between-two-normal-distributions-part-ii">Difference between two normal distributions part (II)</h3>
 <p>The fertilizer makes plants grow, but affects different plants differently, because genetics.</p>
 <p>As a VERY skilled geneticist, you know that the standard deviation of the control plots will be exactly 5g, but now you also know the standard deviation of the treatment plants will be exactly 9g. You know that plants are on average 200g, and the fertilizer should increase this by 30g (a 15% increase).</p>
@@ -2542,16 +2545,16 @@ f(x) = e^x
 </div>
 </div>
 <p><strong>Questions</strong></p>
-<ol type="1">
-<li>What is the likelihood for the observations? Consider that you know the control mean (<span class="math inline">\(\mu\)</span>), the control standard deviation (<span class="math inline">\(\sigma_c\)</span>) and the treatment standard deviation (<span class="math inline">\(\sigma_t\)</span>). How is this different from the first equation?</li>
-<li>Use maximum likelihood to confirm that the difference is really 30g</li>
-<li>Is the likelihood profile different from the first exercise? that is, does the plot of likelihood values (y axis) against parameter values (x axis) look the same?</li>
-</ol>
+<ul>
+<li><strong>1.3.3</strong> What is the likelihood for the observations? Consider that you know the control mean (<span class="math inline">\(\mu\)</span>), the control standard deviation (<span class="math inline">\(\sigma_c\)</span>) and the treatment standard deviation (<span class="math inline">\(\sigma_t\)</span>). How is this different from the first equation?</li>
+<li><strong>1.3.4</strong> Use maximum likelihood to confirm that the difference is really 30g.</li>
+<li><strong>1.3.5</strong> Is the likelihood profile different from the first exercise? that is, does the plot of likelihood values (y axis) against parameter values (x axis) look the same?</li>
+</ul>
 <h2 id="two-parameters">Two parameters</h2>
 <p><em>The following two examples are lifted from Bolker , page 182</em></p>
-<p>Consider some tadpoles, who live a difficult life. They are in an experiment where they are kept at different densities. The experimenter introduces a predator to the container with the tadpoles, and observes as the predator kills tadpoles.</p>
+<p>Consider the tadpoles: they live a difficult life. They are in an experiment where they are kept at different densities. The experimenter introduces a predator to the container with the tadpoles, and observes as the predator kills tadpoles.</p>
 <p>The experiment has six treatments: 5, 10, 15, 20, 25, 30 tadpoles per tank, and 5 tanks per treatment.</p>
-<p>Predators can feed more when prey density is higher, but sometimes slow down when the prey get to very high densities. In a classic Type II functional response, this is modelled with two numbers. First, a predator species has some constant attack rate <span class="math inline">\(a\)</span> – they only need to eat so much per unit time. Second, they must “handle” each prey item (kill, digest, etc) before attacking another. This handling time creates the slowdown in attack: no matter how many prey there are, they still take the same effort to catch, kill, and digest.</p>
+<p>Predators can feed more when prey density is higher, but sometimes slow down when the prey get to very high densities. In a classic Type II functional response, this is modelled with two numbers. First, a predator species has some constant attack rate <span class="math inline">\(a\)</span> – they only need to eat so much per unit time. Second, they must “handle” each prey item (kill, digest, etc) before attacking another. This handling time creates the slowdown in attack: no matter how many prey there are, each still takes the same effort to catch, kill, and digest.</p>
 <p>The Type II functional response is written as:</p>
 <p><span class="math display">\[
 f(N) = \frac{a}{a + ahN}
@@ -2562,30 +2565,59 @@ f(N) = \frac{a}{a + ahN}
 <li><span class="math inline">\(N\)</span> is the number of prey</li>
 </ul>
 <p>This equation produces a per capita rate of predation: the <em>proportion</em> of prey killed by one predator in a unit of time.</p>
-<p>Play with this equation in R, using <code>curve()</code>, and modify values of <code>a</code> and <code>h</code>.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>a</span> <span class='op'>&lt;-</span> <span class='fl'>0.7</span>
-<span class='va'>h</span> <span class='op'>&lt;-</span> <span class='fl'>1.3</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>a</span> <span class='op'>&lt;-</span> <span class='fl'>0.8</span>
+<span class='va'>h</span> <span class='op'>&lt;-</span> <span class='fl'>.3</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='va'>a</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='va'>a</span><span class='op'>*</span><span class='va'>h</span><span class='op'>*</span><span class='va'>x</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>30</span><span class='op'>)</span>, ylim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="exercise_questions_files/figure-html5/unnamed-chunk-3-1.png" width="624" /></p>
+</div>
+<ul>
+<li><strong>2.1.1</strong> Play with this equation in R, using <code>curve()</code>, and modify values of <code>a</code> and <code>h</code>. Convince yourself that the output is always between 0 and 1.</li>
+<li><strong>2.1.2</strong> Are there any constraints on the parameters? Think about how you will handle that in your Maximum Likelihood search.</li>
+</ul>
+<p>At the end of the experiment, the scientist comes back and measures how many tadpoles were killed in each treatment, out of the total number originally placed in that tank.</p>
+<ul>
+<li><strong>2.1.3</strong> What probability distribution would you use for these data? What are the parameters of this distribution?</li>
+<li><strong>2.1.4</strong> The functional response equation explored above replaces one of these parameters. Which one, and why?</li>
+</ul>
+<h4 id="part-2">Part 2</h4>
+<p>Simulate some data with known parameters for <span class="math inline">\(a = 0.8\)</span> and <span class="math inline">\(h = 0.3\)</span></p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>a</span> <span class='op'>&lt;-</span> <span class='fl'>0.8</span>
+<span class='va'>h</span> <span class='op'>&lt;-</span> <span class='fl'>.3</span>
+<span class='va'>how_many_tanks</span> <span class='op'>&lt;-</span> <span class='fl'>10</span>
+
+<span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='va'>how_many_tanks</span>, prob <span class='op'>=</span>  <span class='va'>a</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='va'>a</span><span class='op'>*</span><span class='va'>h</span><span class='op'>*</span><span class='fl'>10</span><span class='op'>)</span>, size <span class='op'>=</span> <span class='fl'>10</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code> [1] 3 2 3 5 2 2 3 5 2 5</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>size_of_tank</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>10</span>, <span class='fl'>15</span>, <span class='fl'>20</span>, <span class='fl'>25</span>, <span class='fl'>30</span><span class='op'>)</span>
+
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>1859</span><span class='op'>)</span>
+<span class='va'>dead_tadpoles</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/lapply.html'>lapply</a></span><span class='op'>(</span><span class='va'>size_of_tank</span>, <span class='kw'>function</span><span class='op'>(</span><span class='va'>SIZE</span><span class='op'>)</span> <span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='va'>how_many_tanks</span>, prob <span class='op'>=</span>  <span class='va'>a</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='va'>a</span><span class='op'>*</span><span class='va'>h</span><span class='op'>*</span> <span class='va'>SIZE</span><span class='op'>)</span>, size <span class='op'>=</span> <span class='va'>SIZE</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='va'>dead_tadpole_df</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+  density <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span><span class='op'>(</span><span class='va'>size_of_tank</span>, times <span class='op'>=</span> <span class='va'>how_many_tanks</span><span class='op'>)</span>,
+  mortality <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/do.call.html'>do.call</a></span><span class='op'>(</span><span class='va'>c</span>, <span class='va'>dead_tadpoles</span><span class='op'>)</span><span class='op'>)</span>
+
+
+<span class='fu'><a href='https://rdrr.io/r/base/with.html'>with</a></span><span class='op'>(</span><span class='va'>dead_tadpole_df</span>,
+     <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>density</span>, <span class='fu'><a href='https://rdrr.io/r/base/jitter.html'>jitter</a></span><span class='op'>(</span><span class='va'>mortality</span>, amount <span class='op'>=</span> <span class='fl'>.2</span><span class='op'>)</span>,
+          pch <span class='op'>=</span> <span class='fl'>21</span>, bg <span class='op'>=</span> <span class='st'>"darkgreen"</span>,
+          cex <span class='op'>=</span> <span class='fl'>1.2</span>, col <span class='op'>=</span> <span class='st'>"grey"</span><span class='op'>)</span>
+     <span class='op'>)</span>
 </code></pre>
 </div>
 <p><img src="exercise_questions_files/figure-html5/unnamed-chunk-4-1.png" width="624" /></p>
 </div>
-<p>Convince yourself that the output is always between 0 and 1. Are there any constraints on the parameters? Think about how you will handle that in your Maximum Likelihood search.</p>
-<p>At the end of the experiment, the scientist comes back and measures how many tadpoles were killed in each treatment, out of the total number originally placed in that tank. What probability distribution would you use for these data? Where do you place the functional response equation explored above?</p>
-<h4 id="part-2">Part 2</h4>
-<p>Simulate some data with known parameters for <span class="math inline">\(a = 0.6\)</span> and <span class="math inline">\(h = 0.3\)</span></p>
-<div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>a</span> <span class='op'>&lt;-</span> <span class='fl'>0.7</span>
-<span class='va'>h</span> <span class='op'>&lt;-</span> <span class='fl'>1.3</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>rbinom</a></span><span class='op'>(</span><span class='fl'>5</span>,prob <span class='op'>=</span>  <span class='va'>a</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='va'>a</span><span class='op'>*</span><span class='va'>h</span><span class='op'>*</span><span class='fl'>10</span><span class='op'>)</span>, size <span class='op'>=</span> <span class='fl'>10</span><span class='op'>)</span>
-</code></pre>
-</div>
-<pre><code>[1] 1 0 1 2 1</code></pre>
-</div>
-<p><em>(to be continued!)</em></p>
+<ul>
+<li><strong>2.1.5</strong> Use the likelihood you wrote above to find the values of <span class="math inline">\(a\)</span> and <span class="math inline">\(h\)</span> that maximize the likelihood. Can you recover the values you used in the simulation?</li>
+</ul>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
