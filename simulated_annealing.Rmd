@@ -1,7 +1,12 @@
 ---
-title: "The Simulated Annealing Algorithm"
-author: "Andrew"
-output: html_document
+title: "The Simulated Annealing Algorithm, 2 ways"
+author:
+- name: Dominique Gravel, Ph.D.
+- name: Andrew MacDonald, Ph.D.
+output:
+  distill::distill_article:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}

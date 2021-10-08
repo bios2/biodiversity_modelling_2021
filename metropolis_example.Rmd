@@ -1,7 +1,11 @@
 ---
 title: "Introduction to the Metropolis Algorithm"
-author: "Andrew"
-output: html_document
+author:
+- name: Andrew MacDonald
+output:
+  distill::distill_article:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
