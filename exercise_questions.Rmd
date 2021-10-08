@@ -1,6 +1,6 @@
 ---
 title: "At-home Statistical Workout 💪💪💪💪"
-author: "Andrew"
+author: "Andrew MacDonald"
 output:
   distill::distill_article:
     toc: true
@@ -11,11 +11,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-
 Here are some suggested ideas for how to work out your likelihood skills! 
 
 They are divided into three sections: one, two and three parameters. 
@@ -24,17 +19,16 @@ They are divided into three sections: one, two and three parameters.
 
 **To do an exercise: ** copy and paste the R code into an R source file. Run it, then work with the data.frame it creates!
 
-## One parameter
+## 1. One parameter
 
-
-
-### One-parameter exponential distribution
+### 1.1 The patient baby birds
 
 You are watching a female bird visiting her nest, bringing back food for nestlings. 
 Every time she comes back you write down the number of minutes since the last visit. You watch for 20 consecutive visits.
-This species brings food once every 10 minutes, so six times an hour, and visits are prefectly random. 
-This implies an Exponential distribution with a rate of $6\text{visits} / 60\text{minutes}$ so in other words $0.1$ visits per minute.
-Use maximum likelihood to confirm this number
+This species brings food once every 10 minutes, so six times an hour, and visits are perfectly random. 
+This implies an Exponential distribution with a rate of $6\text{visits} / 60\text{minutes}$ so in other words $0.1$ visits per minute.  
+
+Use maximum likelihood to confirm this number.
 
 ```{r bird-visits}
 visit_rate <- 6/60
@@ -48,14 +42,15 @@ hist(time_between_visit)
 
 Questions / thoughts: 
 
-1. Begin by trying only positive numbers in your algorithm.
-1. Run the the following `rexp(1, -1)`. What happens? Why? 
-1. How would you constrain your algorithm to use only positive numbers? 
+* **1.1.1** Begin by trying only positive numbers in your algorithm.
+* **1.1.2** Run the the following `rexp(1, -1)`. What happens? Why? 
+* **1.1.3** How would you constrain your algorithm to use only positive numbers? 
 
-### Monarch Butterfly numbers
+### 1.2 Monarch Butterfly numbers
 
 You are concerned about Monarchs, so you've decided to count their eggs! 
-You look on 50 milkweed plants in your neighbourhood to find them. The eggs follow a perfect Poisson distribution with a mean of 120 eggs per plant.
+You look on 50 milkweed plants in your neighbourhood to find them. 
+The eggs follow a perfect Poisson distribution with a mean of 120 eggs per plant.
 
 ```{r}
 mean_eggs <- 120
@@ -75,7 +70,15 @@ $$
 \text{eggs} \sim \text{Poisson}(\lambda)
 $$
 
-you do this by searching over values of lambda between 1 and 200
+you do this by searching over values of $\lambda$ between 1 and 200.
+
+**Questions**:
+
+* **1.2.1** Write the expression for the maximum likelihood estimate of $\lambda$. 
+* **1.2.2** Describe how you will search between the values of 1 and 200 for the maximum likelihood estimate of $\lambda$.
+* **1.2.3** Maximize the likelihood and recover the true value of 120.
+
+#### Monarch Butterflies Part 2
 
 Lambda can't be 0 or negative. You decide to replace the value of $\lambda$ with a function that is always greater than 0: 
 
@@ -87,7 +90,7 @@ $$
 curve(exp(x), xlim = c(-3, 3))
 ```
 
-Since this function is always positive, and $\lambda$ is always positive, you decide to put the function in for the $\lambda$ of the Poisson:
+Since this function is always positive, and $\lambda$ is always positive, the function can take the place of $\lambda$ in your model. 
 
 $$
 \text{eggs} \sim \text{Poisson}(e^x)
@@ -95,10 +98,11 @@ $$
 
 **Questions**: 
 
-1. Now what values should you use for $x$ ? 
-1. Are your answers from the two methods the same?
+* **1.2.4** Now what values should you use for $x$ ? 
+* **1.2.5** Find the Maximum Likelihood value of $x$. 
+* **1.2.6** Are your answers from the two methods the same? How can you tell?
 
-### Difference between two normal distributions (part I)
+### 1.3 Difference between two normal distributions (part I)
 
 You add some fertilizer to plants, because experiments. 
 This makes the plants grow more on average, because physiology.
@@ -126,10 +130,8 @@ par(mfrow = c(1,1))
 
 **Questions**
 
-1. What is the likelihood for the observations? Consider that you know the control mean ($\mu$), the standard deviation ($\sigma$). What is missing? Call this missing quantity $\alpha$.
-1. Use maximum likelihood to confirm that the difference is really 30g
-
-
+* **1.3.1** What is the likelihood for the observations? Consider that you know the control mean ($\mu$), the standard deviation of both treatment and control ($\sigma$). What is missing? Call this missing quantity $\alpha$.
+* **1.3.2** Use maximum likelihood to confirm that the difference is really 30g.
 
 
 ### Difference between two normal distributions part (II) 
@@ -158,19 +160,23 @@ par(mfrow = c(1,1))
 
 **Questions**
 
-1. What is the likelihood for the observations? Consider that you know the control mean ($\mu$), the control standard deviation ($\sigma_c$) and the treatment standard deviation ($\sigma_t$). How is this different from the first equation?
-1. Use maximum likelihood to confirm that the difference is really 30g
-1. Is the likelihood profile different from the first exercise? that is, does the plot of likelihood values (y axis) against parameter values (x axis) look the same? 
+* **1.3.3** What is the likelihood for the observations? Consider that you know the control mean ($\mu$), the control standard deviation ($\sigma_c$) and the treatment standard deviation ($\sigma_t$). How is this different from the first equation?
+* **1.3.4** Use maximum likelihood to confirm that the difference is really 30g.
+* **1.3.5** Is the likelihood profile different from the first exercise? that is, does the plot of likelihood values (y axis) against parameter values (x axis) look the same? 
 
 ## Two parameters
 
 _The following two examples are lifted from Bolker , page 182_
 
-Consider some tadpoles, who live a difficult life. They are in an experiment where they are kept at different densities.  The experimenter introduces a predator to the container with the tadpoles, and observes as the predator kills tadpoles. 
+Consider the tadpoles: they live a difficult life. They are in an experiment where they are kept at different densities. The experimenter introduces a predator to the container with the tadpoles, and observes as the predator kills tadpoles. 
 
 The experiment has six treatments: 5, 10, 15, 20, 25, 30 tadpoles per tank, and 5 tanks per treatment.
 
-Predators can feed more when prey density is higher, but sometimes slow down when the prey get to very high densities. In a classic Type II functional response, this is modelled with two numbers. First, a predator species has some constant attack rate $a$ -- they only need to eat so much per unit time. Second, they must "handle" each prey item (kill, digest, etc) before attacking another. This handling time creates the slowdown in attack: no matter how many prey there are, they still take the same effort to catch, kill, and digest.
+Predators can feed more when prey density is higher, but sometimes slow down when the prey get to very high densities. 
+In a classic Type II functional response, this is modelled with two numbers. 
+First, a predator species has some constant attack rate $a$ -- they only need to eat so much per unit time. 
+Second, they must "handle" each prey item (kill, digest, etc) before attacking another. 
+This handling time creates the slowdown in attack: no matter how many prey there are, each still takes the same effort to catch, kill, and digest.
 
 The Type II functional response is written as:
 
@@ -184,26 +190,48 @@ $$
 
 This equation produces a per capita rate of predation: the *proportion* of prey killed by one predator in a unit of time. 
 
-Play with this equation in R, using `curve()`, and modify values of `a` and `h`.
-
 ```{r}
-a <- 0.7
-h <- 1.3
+a <- 0.8
+h <- .3
 curve(a/(1 + a*h*x), xlim = c(0,30), ylim = c(0,1))
 ```
 
-Convince yourself that the output is always between 0 and 1. Are there any constraints on the parameters? Think about how you will handle that in your Maximum Likelihood search.
 
-At the end of the experiment, the scientist comes back and measures how many tadpoles were killed in each treatment, out of the total number originally placed in that tank. What probability distribution would you use for these data? Where do you place the functional response equation explored above?
+* **2.1.1** Play with this equation in R, using `curve()`, and modify values of `a` and `h`. Convince yourself that the output is always between 0 and 1. 
+* **2.1.2** Are there any constraints on the parameters? Think about how you will handle that in your Maximum Likelihood search.
+
+At the end of the experiment, the scientist comes back and measures how many tadpoles were killed in each treatment, out of the total number originally placed in that tank. 
+
+* **2.1.3** What probability distribution would you use for these data? What are the parameters of this distribution?
+* **2.1.4** The functional response equation explored above replaces one of these parameters. Which one, and why?
 
 #### Part 2
 
-Simulate some data with known parameters for $a = 0.6$ and $h = 0.3$
+Simulate some data with known parameters for $a = 0.8$ and $h = 0.3$
 
 ```{r}
-a <- 0.7
-h <- 1.3
-rbinom(5,prob =  a/(1 + a*h*10), size = 10)
+a <- 0.8
+h <- .3
+how_many_tanks <- 10
+
+rbinom(how_many_tanks, prob =  a/(1 + a*h*10), size = 10)
+
+size_of_tank <- c(5, 10, 15, 20, 25, 30)
+
+set.seed(1859)
+dead_tadpoles <- lapply(size_of_tank, function(SIZE) rbinom(how_many_tanks, prob =  a/(1 + a*h* SIZE), size = SIZE))
+
+dead_tadpole_df <- data.frame(
+  density = rep(size_of_tank, times = how_many_tanks),
+  mortality = do.call(c, dead_tadpoles))
+
+
+with(dead_tadpole_df,
+     plot(density, jitter(mortality, amount = .2),
+          pch = 21, bg = "darkgreen",
+          cex = 1.2, col = "grey")
+     )
+
 ```
 
-_(to be continued!)_
+* **2.1.5** Use the likelihood you wrote above to find the values of $a$ and $h$ that maximize the likelihood. Can you recover the values you used in the simulation?
