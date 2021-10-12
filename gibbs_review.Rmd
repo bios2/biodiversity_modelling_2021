@@ -1,0 +1,232 @@
+---
+title: "Review of the algorithm of a Gibbs Sampler"
+author:
+- name: Andrew MacDonald
+output:
+  distill::distill_article:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages(library(tidyverse))
+```
+
+
+## Sampling from a distribution
+
+
+## Conjugate prior review
+
+In bayesian statistics we use probability distributions to measure uncertainty about the parameter values we care about. 
+
+classic example is the binomial and beta distributions 
+
+(proof on the board, optional)
+
+```{r}
+## start with some survival data -- out of 42
+true_prob <- 0.03
+
+set.seed(1859)
+n_surviving <- rbinom(n = 3000, size = 42, prob = true_prob)
+
+hist(n_surviving, xlim = c(0, 42))
+```
+
+Can use the conjugate posterior.
+
+First, use the conjugate prior to the binomial (beta distribution).
+
+```{r}
+curve(dbeta(x, 2,5))
+```
+
+This might be a reasonable first guess. but what does it actually mean? we need to do predictions to make sure.
+
+```{r}
+possible_probabilities <- rbeta(30, 2, 5)
+
+hist(rbinom(30, 42, possible_probabilities), xlim = c(0, 42))
+
+```
+Do this a bunch of times, to see if the prior is foolish or not.
+
+With enough data, even an outlandish prior is fine: 
+
+```{r}
+lived <- sum(n_surviving)
+died <- sum(42 - n_surviving)
+```
+
+calculate the posterior
+
+```{r}
+curve(dbeta(x, 2, 5),ylim = c(0,4))
+curve(dbeta(x, 2 + lived, 5 + died), add = TRUE, lty = 2)
+abline(v = true_prob)
+
+abline(v =(2 + lived)/(2 + lived + 5 + died), col = "red")
+```
+
+But what if we *didn't* want to do this?
+
+## Metropolis
+
+Suppose we had written the model like this:
+
+$$
+\begin{align}
+y &\sim \text{Binomial}(p, N) \\
+logit(p) &\sim \text{Normal}(1, 1)
+\end{align}
+$$
+
+or could also be said:
+
+$$
+\begin{align}
+y &\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1-\frac{e^\alpha}{1 + e^\alpha}\right)^{n-k} \\
+\alpha &\sim \text{Normal}(1, 1)
+\end{align}
+$$
+
+Now we have no conjugate posterior
+
+```{r}
+
+## define likelihoods for our problem
+binomial_loglike <- function(data_vec, prob_new)  sum(dbinom(data_vec, size = 42, 
+                                                             prob = prob_new, log = TRUE))
+
+normal_loglike <- function(val, mean_prior, sd_prior){
+  dnorm(val, mean = mean_prior, sd = sd_prior, log = TRUE)
+}
+
+## function to use these to calculate the value of the numerator in Bayes Formula
+numerator <- function(v, data)  {
+  binomial_loglike(data_vec = data, prob_new = dlogis(v)) + normal_loglike(val = v, mean = -1, sd = 2)
+}
+
+# proposal function to make new parameter values.
+propose_new <- function(x, sig_tune) rnorm(1, mean = x, sd = sig_tune)
+
+# start value
+metropolis <- function(dataset,
+                       n_samples,
+                       tune_parameter,
+                       start_value, 
+                       numerator_function = numerator){
+  chain <- numeric(n_samples)
+  chain[1] <- start_value
+  
+  for (i in 2:length(chain)){
+    
+    start <- chain[i - 1]
+    
+    new <- propose_new(start, sig_tune = tune_parameter)
+    
+    r <- exp(numerator_function(v = new, data = dataset) - 
+               numerator_function(v = start, data = dataset))
+    
+    p_accept <- min(1, r)
+    
+    chain[i] <- ifelse(runif(1) < p_accept, new, start)
+  }
+  return(chain)
+}
+
+
+chain <- metropolis(dataset = n_surviving, n_samples = 1000, tune_parameter = 0.2, start_value = 0)
+
+plot(chain[300:1000], type = "l")
+```
+
+```{r}
+hist(chain[300:5000])
+```
+
+
+```{r}
+hist(plogis(chain[300:5000]))
+abline(v = true_prob)
+```
+
+
+Rejection
+
+<make a plot of rejections?
+
+```{r}
+rejects <- zapsmall(chain[2:length(chain)] - chain[1:(length(chain) - 1)] )
+
+plot(rejects)
+
+sum(rejects == 0)  / length(chain)
+```
+
+lots of rejection of samples. That's not very efficient! 
+
+## Metropolis-Hastings 
+
+The same, but we can use an asymmetrical proposal distribution.
+
+<example??>
+
+## Gibbs sampling
+
+<div style="width:100%;height:0;padding-bottom:61%;position:relative;"><iframe src="https://giphy.com/embed/3oEhmHmWP3Y9wQxoli" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/funny-lol-cartoon-3oEhmHmWP3Y9wQxoli">via GIPHY</a></p>
+
+Sample each parameter, keeping the others fixed. Let's consider just two for now:
+
+Start with random values for each parameter
+
+assuming that all are correct except the first, sample a value for the first
+
+Assuming that sample was correct for the first, what is the second? 
+
+<cartoon image here> 
+
+```{r}
+true_mean <- 31
+true_sd <-  4
+set.seed(1859)
+mass_values <- rnorm(30, mean = true_mean, sd = true_sd)
+```
+
+define the model, but in a deliberate way, choosing the priors to be conjugates
+
+$$
+\begin{align}
+y &\sim \text{Normal}(\mu, \sigma) \\
+\mu &\sim \text{Normal}(10,5) \\
+\frac{1}{\sigma^2} &\sim \text{Gamma}(15, 7)
+\end{align}
+$$
+
+```{r}
+curve(dgamma(x, 15, 7), xlim = c(0, 5))
+```
+
+if the variance is known, the posterior for the mean is a normal distribution:
+
+$$
+\text{Normal}\left(\frac{\frac{10}{5}+ \frac{\sum{y}}{\sigma^2}}{\frac{1}{5^2} + \frac{n}{\sigma^2}}, \left(\frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
+$$
+
+if the mean is known, then the posterior distribution for the variance is an inverse gamma:
+
+$$
+\frac{1}{\sigma^2} \sim \text{gamma}\left(\alpha + \frac{n}{2}, \frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
+$$
+
+
+
+```{r}
+
+```
+
+
+
+
