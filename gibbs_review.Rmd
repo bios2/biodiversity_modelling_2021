@@ -222,11 +222,94 @@ $$
 $$
 
 
+## Clara Coffee Example
 
 ```{r}
+clara_coffee <- tibble::tribble(
+  ~Coffee_extraction, ~time,
+  15.88,              19.13875598,
+  16.72,              7.633587786,
+  16.72,              22.90076336,
+  17,                       30,
+  17.3,              5.479452055,
+  17.64,              12.93103448,
+  17.75,              9.459459459,
+  17.77,              12.93103448,
+  17.99,              10.18867925,
+  18,                        6,
+  18.03,              11.86440678,
+  18.32,              15.54404145,
+  18.57,              23.71794872,
+  18.89,              24.75247525,
+  19.13,                      6.4,
+  19.33,              20.30456853,
+  19.36,              18.71345029,
+  19.5,              33.49282297,
+  19.67,              13.61867704,
+  20.23,              15.81027668,
+  20.26,              17.54385965,
+  20.39,              13.76146789,
+  20.45,              14.93775934,
+  20.57,              13.61867704,
+  20.61,              14.85148515,
+  20.69,                39.408867,
+  20.76,              6.944444444,
+  20.84,              8.968609865,
+  20.88,              11.40684411,
+  20.95,              9.756097561,
+  21.04,              4.843304843,
+  21.2,               14.0969163,
+  21.25,                     15.2,
+  21.36,              6.060606061,
+  21.72,              11.52073733,
+  21.86,              10.89494163,
+  22.14,              8.849557522,
+  22.26,              8.532423208,
+  22.47,              13.39285714,
+  22.48,              5.333333333,
+  23.48,              6.134969325,
+  24.29,              6.993006993,
+  24.35,               7.86163522,
+  24.63,              12.95336788
+)
+
+
+library(ggplot2)
+
+ggplot(clara_coffee, aes(x = time, y = Coffee_extraction/100)) +
+  geom_point()
+
+#' what are the response distribution?
+#'
+#' what is the question?
+
+#' quel est la relation entre la coulée d'eau et lextraction de cafe
+#'
+
+# response distribtuion -- between 0 and 1. Could be the beta.
+
+# normal -- for pragmatic reasons ?
+
+curve(dgamma(x, shape = (2)^2/4, rate = 2/4), xlim = c(0,5))
+sigma_coffee <- 1/sqrt(rgamma(1, shape = (2)^2/4, rate = 2/4))
+mean_coffee <- rnorm(1, 21, 3)
+change_coffee <- rnorm(1, 1, 1)
+
+clara_coffee$t_centered <- with(clara_coffee, time - mean(time))
+
+clara_coffee_prior <- transform(clara_coffee,
+                                average_measure = mean_coffee +
+                                  change_coffee*t_centered)
+
+clara_coffee_prior$fake_obs <- rnorm(n = nrow(clara_coffee),
+                                     mean = clara_coffee_prior$average_measure,
+                                     sd = sigma_coffee)
+
+
+ggplot(clara_coffee_prior, aes(x = Coffee_extraction, y = fake_obs)) +
+  geom_point()
 
 ```
-
 
 
 
