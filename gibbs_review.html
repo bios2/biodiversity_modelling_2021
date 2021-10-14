@@ -2404,23 +2404,45 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <nav class="l-text toc figcaption" id="TOC">
 <h3>Contents</h3>
 <ul>
+<li><a href="#why-we-do-what-we-do">Why we do what we do</a></li>
 <li><a href="#conjugate-prior-review">Conjugate prior review</a></li>
 <li><a href="#seed-survival-part-i">Seed survival part I</a></li>
-<li><a href="#metropolis">Metropolis</a></li>
+<li><a href="#mcmc-in-general">MCMC in general</a><ul>
+<li><a href="#the-metropolis-algorithm">The Metropolis Algorithm</a><ul>
+<li><a href="#sampling-this-model-the-metropolis-algorithm">Sampling this model: the Metropolis algorithm</a></li>
+</ul></li>
 <li><a href="#metropolis-hastings">Metropolis-Hastings</a></li>
-<li><a href="#gibbs-sampling">Gibbs sampling</a></li>
+<li><a href="#gibbs-sampling">Gibbs sampling</a><ul>
+<li><a href="#lets-do-it">let’s do it</a></li>
+</ul></li>
+<li><a href="#three-parameters-at-once">Three parameters at once</a></li>
+<li><a href="#metropolis-hastings-and-gibbs-at-the-same-time">Metropolis hastings and gibbs at the same time</a></li>
 <li><a href="#clara-coffee-example">Clara Coffee Example</a></li>
+</ul></li>
 </ul>
 </nav>
 </div>
-<p>Minerva and Athena quote from McElreath</p>
-<p>putting things in boxes</p>
+<h2 id="why-we-do-what-we-do">Why we do what we do</h2>
+<p>In bayesian statistics we use probability distributions to measure uncertainty about the parameter values we care about.</p>
+<p>Because we measure uncertainty with probability, that means we work in probability distributions. We begin with distributions, and we end with distributions. The beginning distributions express all we want to say about what our parameters are. They come first, and are called the “prior” distributions. After we collect data and apply some model to relate it, we find ourselves with a new set of distributions. Because these come <em>after</em> the process of data collection and model creation, this is called the “posterior”.</p>
+<p>This means we are applying Bayes rule. This shows us how to update our priors to reflect what we learned from the experiment and model building:</p>
+<p>$$ <span class="math display">\[\begin{align}
+[\theta_1, \theta_2 | \bf y] &amp;\propto [\theta_1, \theta_2, \bf y] \\
+&amp;\propto  [\bf y | \theta_1, \theta_2][\theta_1][\theta_2]\\
+
+\end{align}\]</span> $$</p>
+<p>Refreshing questions: * which of these is the likelihood? Which is the prior? * why is it OK to use something <em>proportional to</em> (<span class="math inline">\(\propto\)</span>) what we want?</p>
+<p>The whole goal here is to get this posterior distribution. There are many ways to do this! This workshop is about some of them.</p>
 <ul>
-<li>conjugacy</li>
-<li></li>
+<li><strong>Conjugate priors</strong> – works for 1-parameter problems. Gives you the literal equation of the posterior distribution. Only directly useful for very simple problems. Becomes the absolute star of the show with Gibbs Sampling.</li>
+<li><strong>Laplace Approximation</strong> – very handy, useful best guess for many multi-parameter models; we’re not doing it.</li>
+<li><strong>Metropolis</strong> – A venerable classic for sampling simple models. You have to propose random “jumps” around the distribution, and these need to be symmetric</li>
+<li><strong>Metropolis-Hastings</strong> – same as Metropolis, but the jumps get to be <em>asymmetric</em>.</li>
+<li><strong>Gibbs sampling</strong> – A wonderful technique for simplifying complex problems. Requires that priors be chosen to make conjugate pairs with likelihoods.</li>
+<li><strong>Metropolis-in-Gibbs</strong> – is a Deluxe Combo of the previous two.</li>
+<li><strong>HMC etc</strong> – Hamiltonian Monte Carlo is an advanced modern way of doing the same thing. Sets you free to use the priors that work for your question, not the ones that work for your math.</li>
 </ul>
 <h2 id="conjugate-prior-review">Conjugate prior review</h2>
-<p>In bayesian statistics we use probability distributions to measure uncertainty about the parameter values we care about.</p>
 <p>classic example is the binomial and beta distributions</p>
 <p>(proof on the board??)</p>
 <h2 id="seed-survival-part-i">Seed survival part I</h2>
@@ -2465,7 +2487,7 @@ p_{\text{survival}} &amp;\sim \text{Beta}(2,5)\\
 </div>
 <p><img src="gibbs_review_files/figure-html5/unnamed-chunk-2-1.png" width="624" /></p>
 </div>
-<p>This might be a reasonable first guess. but what does it actually mean? we need to do predictions to make sure.</p>
+<p>This might be a reasonable first guess. But what does it actually mean? we need to do predictions to make sure.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>possible_probabilities</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Beta.html'>rbeta</a></span><span class='op'>(</span><span class='fl'>300</span>, <span class='fl'>2</span>, <span class='fl'>5</span><span class='op'>)</span>
@@ -2497,22 +2519,72 @@ p_{\text{survival}} &amp;\sim \text{Beta}(2,5)\\
 <p><img src="gibbs_review_files/figure-html5/unnamed-chunk-5-1.png" width="624" /></p>
 </div>
 <p>But what if we <em>didn’t</em> want to do this?</p>
-<h2 id="metropolis">Metropolis</h2>
+<h1 id="mcmc-in-general">MCMC in general</h1>
+<p>The objective of MCMC algorithm is to simulate parameters from a complex posterior distribution.</p>
+<p>Rather than measure the <em>absolute</em> probability of different parameter values:</p>
+<p><span class="math display">\[
+[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
+\]</span></p>
+<p>we sample, and evaluate the <em>relative</em> probability of two possible parameter values:</p>
+<p><span class="math display">\[
+\frac{[\theta^{new}|y]}{[\theta^k|y]} = \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}
+\]</span></p>
+<p>In this way, we can sample a probability distribution ( <span class="math inline">\([\theta|y]\)</span> ) using only something <em>proportional</em> to that distribution ( <span class="math inline">\([y|\theta][\theta]\)</span> )</p>
+<h2 id="the-metropolis-algorithm">The Metropolis Algorithm</h2>
+<ul>
+<li>Draw <span class="math inline">\(\theta^{new}\)</span> from a <em>symmetric</em> distribution centered on <span class="math inline">\(\theta^{k}\)</span> (i.e. in the <span class="math inline">\(k\)</span>th interation, the current value) e.g. <span class="math inline">\(\theta^{new} \sim N(\theta^{k}, \sigma_{tune})\)</span></li>
+<li>Calculate the ratio R:</li>
+</ul>
+<p><span class="math display">\[
+R = \text{min}\left( 1, \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}\right)
+\]</span></p>
+<p>This is the probability of acceptance. In other words, if the ratio is greater than one, that means the proposal is for a more probable value. We’ll always take it. If the ratio is less than 1, that means the new proposal is less probable than the value we have already. However, there’s a chance we’ll take it anyway.</p>
+<ul>
+<li><p>Test to see if <code>runif(1, min=0, max=1)</code> <span class="math inline">\(&lt; R\)</span>. if so, set <span class="math inline">\(\theta^{k + 1} = \theta^{new}\)</span></p></li>
+<li><p><strong>Discussion question</strong>: why should we accept “worse” parameter values? Why is it good to sometimes stay in the same place?</p></li>
+</ul>
 <p>Suppose we had written the model like this:</p>
 <p><span class="math display">\[
 \begin{align}
 y &amp;\sim \text{Binomial}(p, N) \\
-logit(p) &amp;\sim \text{Normal}(1, 1)
+\text{logit}(p)  &amp;= \alpha\\ 
+\alpha &amp;\sim \text{Normal}(1, 1)
 \end{align}
 \]</span></p>
-<p>or could also be said:</p>
+<p>Remember that the binomial distribution is written as:</p>
+<p><span class="math display">\[
+{n \choose k} p^k (1-p)^{n-k}
+\]</span></p>
+<p>the two lines in equation 1 are just a shorthand for saying “replace <span class="math inline">\(p\)</span> with the inverse logit of <span class="math inline">\(\alpha\)</span>”. We could also write it this way, literally replacing <span class="math inline">\(p\)</span> with that function</p>
 <p><span class="math display">\[
 \begin{align}
 y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1-\frac{e^\alpha}{1 + e^\alpha}\right)^{n-k} \\
 \alpha &amp;\sim \text{Normal}(1, 1)
 \end{align}
 \]</span></p>
-<p>Now we have no conjugate posterior</p>
+<p>Another quick reminder, remember that the logistic function is a traditional way of squishing any real number into the interval <span class="math inline">\((0,1)\)</span>:</p>
+<p><span class="math display">\[
+\frac{e^x}{1 + e^x}
+\]</span></p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>)</span>,
+      xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>4</span>, <span class='fl'>4</span><span class='op'>)</span>, ylim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-6-1.png" width="624" /></p>
+</div>
+<h3 id="sampling-this-model-the-metropolis-algorithm">Sampling this model: the Metropolis algorithm</h3>
+<p>Once again, our model is:</p>
+<p><span class="math display">\[
+\begin{align}
+y &amp;\sim \text{Binomial}(p, N) \\
+\text{logit}(p)  &amp;= \alpha\\ 
+\alpha &amp;\sim \text{Normal}(1, 1)
+\end{align}
+\]</span></p>
+<p>Now we have no conjugate posterior for <span class="math inline">\(\alpha\)</span>. However, just because we can’t calculate the distribution doesn’t mean we can’t sample it!</p>
+<p>We can use the metropolis algorithm.</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>## define likelihoods for our problem</span>
@@ -2525,12 +2597,24 @@ y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1
   <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>dnorm</a></span><span class='op'>(</span><span class='va'>val</span>, mean <span class='op'>=</span> <span class='va'>mean_prior</span>, sd <span class='op'>=</span> <span class='va'>sd_prior</span>, log <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='op'>}</span>
 
+
+<span class='co'># define our function</span>
 <span class='va'>logistic_curve</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>/</span><span class='op'>(</span><span class='fl'>1</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>)</span>
 
 <span class='co'>## function to use these to calculate the value of the numerator in Bayes Formula</span>
 <span class='va'>numerator</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>v</span>, <span class='va'>data</span><span class='op'>)</span>  <span class='op'>{</span>
   <span class='fu'>binomial_loglike</span><span class='op'>(</span>data_vec <span class='op'>=</span> <span class='va'>data</span>, prob_new <span class='op'>=</span> <span class='fu'>logistic_curve</span><span class='op'>(</span><span class='va'>v</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
     <span class='fu'>normal_loglike</span><span class='op'>(</span>val <span class='op'>=</span> <span class='va'>v</span>, mean <span class='op'>=</span> <span class='op'>-</span><span class='fl'>1</span>, sd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='co'>## function to calculate the acceptance ratio</span>
+<span class='va'>accept_probability</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>new_value</span>, <span class='va'>old_value</span>, <span class='va'>data_to_use</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='va'>r</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='fu'>numerator</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>new_value</span>, data <span class='op'>=</span> <span class='va'>data_to_use</span><span class='op'>)</span> <span class='op'>-</span> 
+        <span class='fu'>numerator</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>old_value</span>, data <span class='op'>=</span> <span class='va'>data_to_use</span><span class='op'>)</span><span class='op'>)</span>
+  
+  <span class='va'>p_accept</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>min</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='va'>r</span><span class='op'>)</span>
+  
+  <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>p_accept</span><span class='op'>)</span>
 <span class='op'>}</span>
 
 <span class='co'># proposal function to make new parameter values.</span>
@@ -2540,23 +2624,22 @@ y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1
 <span class='va'>metropolis</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>dataset</span>,
                        <span class='va'>n_samples</span>,
                        <span class='va'>tune_parameter</span>,
-                       <span class='va'>start_value</span>, 
-                       <span class='va'>numerator_function</span> <span class='op'>=</span> <span class='va'>numerator</span><span class='op'>)</span><span class='op'>{</span>
+                       <span class='va'>start_value</span><span class='op'>)</span><span class='op'>{</span>
   <span class='va'>chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_samples</span><span class='op'>)</span>
+  
   <span class='va'>chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='va'>start_value</span>
   
-  <span class='kw'>for</span> <span class='op'>(</span><span class='va'>i</span> <span class='kw'>in</span> <span class='fl'>2</span><span class='op'>:</span><span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>)</span><span class='op'>)</span><span class='op'>{</span>
+  <span class='kw'>for</span> <span class='op'>(</span><span class='va'>i</span> <span class='kw'>in</span> <span class='fl'>2</span><span class='op'>:</span><span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>{</span>
     
-    <span class='va'>start</span> <span class='op'>&lt;-</span> <span class='va'>chain</span><span class='op'>[</span><span class='va'>i</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>
+    <span class='va'>old</span> <span class='op'>&lt;-</span> <span class='va'>chain</span><span class='op'>[</span><span class='va'>i</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>
     
-    <span class='va'>new</span> <span class='op'>&lt;-</span> <span class='fu'>propose_new</span><span class='op'>(</span><span class='va'>start</span>, sig_tune <span class='op'>=</span> <span class='va'>tune_parameter</span><span class='op'>)</span>
+    <span class='va'>new</span> <span class='op'>&lt;-</span> <span class='fu'>propose_new</span><span class='op'>(</span><span class='va'>old</span>, sig_tune <span class='op'>=</span> <span class='va'>tune_parameter</span><span class='op'>)</span>
     
-    <span class='va'>r</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='fu'>numerator_function</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>new</span>, data <span class='op'>=</span> <span class='va'>dataset</span><span class='op'>)</span> <span class='op'>-</span> 
-               <span class='fu'>numerator_function</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>start</span>, data <span class='op'>=</span> <span class='va'>dataset</span><span class='op'>)</span><span class='op'>)</span>
+    <span class='va'>p_accept</span> <span class='op'>&lt;-</span> <span class='fu'>accept_probability</span><span class='op'>(</span>new_value <span class='op'>=</span> <span class='va'>new</span>,
+                                   old_value <span class='op'>=</span> <span class='va'>old</span>, 
+                                   data_to_use <span class='op'>=</span> <span class='va'>dataset</span><span class='op'>)</span>
     
-    <span class='va'>p_accept</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>min</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='va'>r</span><span class='op'>)</span>
-    
-    <span class='va'>chain</span><span class='op'>[</span><span class='va'>i</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/ifelse.html'>ifelse</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>&lt;</span> <span class='va'>p_accept</span>, <span class='va'>new</span>, <span class='va'>start</span><span class='op'>)</span>
+    <span class='va'>chain</span><span class='op'>[</span><span class='va'>i</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/ifelse.html'>ifelse</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>&lt;</span> <span class='va'>p_accept</span>, <span class='va'>new</span>, <span class='va'>old</span><span class='op'>)</span>
   <span class='op'>}</span>
   <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>)</span>
 <span class='op'>}</span>
@@ -2570,14 +2653,14 @@ y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='fl'>3000</span><span class='op'>]</span>, type <span class='op'>=</span> <span class='st'>"l"</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-6-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-7-1.png" width="624" /></p>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/hist.html'>hist</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='fl'>5000</span><span class='op'>]</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-7-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-8-1.png" width="624" /></p>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2587,7 +2670,7 @@ y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1
 <span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Beta.html'>dbeta</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='fl'>2</span> <span class='op'>+</span> <span class='va'>lived</span>, <span class='fl'>5</span> <span class='op'>+</span> <span class='va'>died</span><span class='op'>)</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, lty <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-8-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-9-1.png" width="624" /></p>
 </div>
 <p>Rejection</p>
 <p>&lt;make a plot of rejections?</p>
@@ -2598,7 +2681,7 @@ y &amp;\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>rejects</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-9-1.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-10-1.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>rejects</span> <span class='op'>==</span> <span class='fl'>0</span><span class='op'>)</span>  <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>)</span>
 </code></pre>
@@ -2655,7 +2738,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>x</span>, shape <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>, rate <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-11-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-12-1.png" width="624" /></p>
 </div>
 <p>if the variance is known, the posterior for the mean is a normal distribution:</p>
 <p><span class="math display">\[
@@ -2667,6 +2750,224 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 \frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
 \beta + \frac{\sum (y_i - \mu)^2}{2}\right)
 \]</span></p>
+<h3 id="lets-do-it">let’s do it</h3>
+<p>To implement this model we need to write functions that will do each of these things in turn.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># calculate the posterior normal distribution for the data and a known variance</span>
+
+<span class='va'>post_mean</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>y_vector</span>, <span class='va'>known_sigma</span>,
+                      <span class='va'>prior_mean</span>, <span class='va'>prior_sd</span>,
+                      <span class='va'>n</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>y_vector</span><span class='op'>)</span><span class='op'>)</span><span class='op'>{</span>
+  <span class='va'>numerator_mean</span> <span class='op'>&lt;-</span> <span class='op'>(</span><span class='va'>prior_mean</span><span class='op'>/</span><span class='va'>prior_sd</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>y_vector</span><span class='op'>)</span> <span class='op'>/</span> <span class='va'>known_sigma</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+  <span class='va'>denominator_mean</span> <span class='op'>&lt;-</span> <span class='op'>(</span><span class='fl'>1</span> <span class='op'>/</span> <span class='va'>prior_sd</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='va'>n</span> <span class='op'>/</span> <span class='va'>known_sigma</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+  
+  <span class='va'>new_mean</span> <span class='op'>&lt;-</span>  <span class='va'>numerator_mean</span> <span class='op'>/</span> <span class='va'>denominator_mean</span>
+    
+  <span class='va'>new_var</span> <span class='op'>&lt;-</span> <span class='fl'>1</span><span class='op'>/</span><span class='va'>denominator_mean</span>
+  
+  <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, mean <span class='op'>=</span> <span class='va'>new_mean</span>, sd <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>new_var</span><span class='op'>)</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='co'># fun to play with this! make sure it makes sense! </span>
+<span class='fu'>post_mean</span><span class='op'>(</span>y_vector <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>,<span class='fl'>4</span>,<span class='fl'>1</span>,<span class='fl'>5</span><span class='op'>)</span>, <span class='fl'>.1</span>, <span class='fl'>7</span>, <span class='fl'>2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>[1] 2.963032</code></pre>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>post_sd</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>y_vector</span>, <span class='va'>known_mean</span>, <span class='va'>prior_alpha</span>, <span class='va'>prior_beta</span><span class='op'>)</span><span class='op'>{</span>
+  
+  <span class='va'>new_alpha</span> <span class='op'>&lt;-</span> <span class='va'>prior_alpha</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>y_vector</span><span class='op'>)</span> <span class='op'>/</span> <span class='fl'>2</span>
+  
+  <span class='va'>new_beta</span> <span class='op'>&lt;-</span> <span class='va'>prior_beta</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='op'>(</span><span class='va'>y_vector</span> <span class='op'>-</span> <span class='va'>known_mean</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span> <span class='op'>/</span> <span class='fl'>2</span>
+  
+  <span class='va'>inverse_variance</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>rgamma</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='fl'>1</span>, shape <span class='op'>=</span> <span class='va'>new_alpha</span>, rate <span class='op'>=</span> <span class='va'>new_beta</span><span class='op'>)</span>
+  
+  <span class='va'>sd_sample</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>/</span><span class='va'>inverse_variance</span><span class='op'>)</span>
+  <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>sd_sample</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='fu'>post_sd</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>,<span class='fl'>4</span>,<span class='fl'>1</span>,<span class='fl'>5</span><span class='op'>)</span>, known_mean <span class='op'>=</span> <span class='fl'>3</span>, prior_alpha <span class='op'>=</span> <span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>, prior_beta <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>[1] 1.18848</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/stats/sd.html'>sd</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>,<span class='fl'>4</span>,<span class='fl'>1</span>,<span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>[1] 1.825742</code></pre>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>true_mean</span> <span class='op'>&lt;-</span> <span class='fl'>24</span>
+<span class='va'>true_sd</span> <span class='op'>&lt;-</span> <span class='fl'>7</span>
+
+<span class='va'>y_data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>400</span>, mean <span class='op'>=</span> <span class='va'>true_mean</span>, sd <span class='op'>=</span> <span class='va'>true_sd</span><span class='op'>)</span>
+
+<span class='co'># gibbs process</span>
+<span class='va'>n_iterations</span> <span class='op'>&lt;-</span> <span class='fl'>2000</span>
+<span class='va'>mean_chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_iterations</span><span class='op'>)</span>
+<span class='va'>sd_chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_iterations</span><span class='op'>)</span>
+
+
+<span class='co'># sample to start -- could be anything, might as well be priors</span>
+<span class='va'>mean_chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, mean <span class='op'>=</span> <span class='fl'>10</span>, sd <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span>
+<span class='va'>sd_chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>rgamma</a></span><span class='op'>(</span><span class='fl'>1</span>, shape <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>, rate <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+
+<span class='kw'>for</span> <span class='op'>(</span><span class='va'>k</span> <span class='kw'>in</span> <span class='fl'>2</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='co'># draw a mean</span>
+  <span class='va'>mean_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'>post_mean</span><span class='op'>(</span>y_vector <span class='op'>=</span> <span class='va'>y_data</span>,
+                             known_sigma <span class='op'>=</span> <span class='va'>sd_chain</span><span class='op'>[</span><span class='va'>k</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>,
+                             prior_mean <span class='op'>=</span> <span class='fl'>10</span>,
+                             prior_sd <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span>
+  <span class='va'>sd_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'>post_sd</span><span class='op'>(</span>y_vector <span class='op'>=</span> <span class='va'>y_data</span>, 
+                         known_mean <span class='op'>=</span> <span class='va'>mean_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span>,
+                         prior_alpha <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>,
+                         prior_beta <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>mean_chain</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_mean</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>sd_chain</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_sd</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-15-1.png" width="624" />
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>You can see that the chains are almost exactly what we want.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>dnorm</a></span><span class='op'>(</span><span class='va'>x</span>, mean <span class='op'>=</span> <span class='va'>true_mean</span>, sd <span class='op'>=</span> <span class='va'>true_sd</span><span class='op'>)</span>,
+      xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='va'>true_mean</span> <span class='op'>-</span> <span class='fl'>4</span> <span class='op'>*</span> <span class='va'>true_sd</span>,
+               <span class='va'>true_mean</span> <span class='op'>+</span> <span class='fl'>4</span> <span class='op'>*</span> <span class='va'>true_sd</span><span class='op'>)</span>, 
+      lwd <span class='op'>=</span> <span class='fl'>2</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, ylim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>0.07</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='kw'>for</span> <span class='op'>(</span><span class='va'>i</span> <span class='kw'>in</span> <span class='fl'>20</span><span class='op'>:</span><span class='fl'>30</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>dnorm</a></span><span class='op'>(</span><span class='va'>x</span>, mean <span class='op'>=</span> <span class='va'>mean_chain</span><span class='op'>[</span><span class='va'>i</span><span class='op'>]</span>, sd <span class='op'>=</span> <span class='va'>sd_chain</span><span class='op'>[</span><span class='va'>i</span><span class='op'>]</span><span class='op'>)</span>, add <span class='op'>=</span> <span class='cn'>TRUE</span>, lty <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='op'>}</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-16-1.png" width="624" /></p>
+</div>
+<p>Are the posterior medians close to the real values?</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/stats/median.html'>median</a></span><span class='op'>(</span><span class='va'>mean_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>[1] 24.47723</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>true_mean</span>
+</code></pre>
+</div>
+<pre><code>[1] 24</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/stats/median.html'>median</a></span><span class='op'>(</span><span class='va'>sd_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>[1] 7.087329</code></pre>
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>true_sd</span>
+</code></pre>
+</div>
+<pre><code>[1] 7</code></pre>
+</div>
+<p>Play with these values and see if you can break this algorithm.</p>
+<h2 id="three-parameters-at-once">Three parameters at once</h2>
+<p>Imagine that you are doing a simple linear regression and you want to get three parameters: the slope, the intercept, and the variance of the observations.</p>
+<p>We perform the same procedure, looking for gibbs samples where we can.</p>
+<p><tk write model definiton> &lt;tk use DAGS to draw the models?&gt;</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>n_invented</span> <span class='op'>&lt;-</span> <span class='fl'>30000</span>
+<span class='va'>x_invented</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Uniform.html'>runif</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='va'>n_invented</span>, <span class='op'>-</span><span class='fl'>2</span>, <span class='fl'>2</span><span class='op'>)</span> 
+
+<span class='va'>true_intercept</span> <span class='op'>&lt;-</span> <span class='fl'>50</span>
+<span class='va'>true_slope</span> <span class='op'>&lt;-</span> <span class='fl'>2</span>
+
+<span class='va'>true_observation_sd</span> <span class='op'>&lt;-</span> <span class='fl'>1.5</span>
+
+<span class='va'>y_invented</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='va'>n_invented</span>, 
+                    mean <span class='op'>=</span> <span class='va'>true_intercept</span> <span class='op'>+</span> <span class='va'>true_slope</span><span class='op'>*</span><span class='va'>x_invented</span>, 
+                    sd <span class='op'>=</span> <span class='va'>true_observation_sd</span><span class='op'>)</span>
+
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>x_invented</span>, <span class='va'>y_invented</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-18-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># gibbs process</span>
+<span class='va'>n_iterations</span> <span class='op'>&lt;-</span> <span class='fl'>2000</span>
+<span class='va'>b0_chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_iterations</span><span class='op'>)</span>
+<span class='va'>b1_chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_iterations</span><span class='op'>)</span>
+<span class='va'>observation_sd_chain</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>numeric</a></span><span class='op'>(</span><span class='va'>n_iterations</span><span class='op'>)</span>
+
+
+<span class='co'># sample to start -- could be anything, might as well be priors</span>
+<span class='va'>b0_chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, mean <span class='op'>=</span> <span class='fl'>10</span>, sd <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span>
+<span class='va'>b1_chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, mean <span class='op'>=</span> <span class='fl'>0</span>, sd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='va'>observation_sd_chain</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>rgamma</a></span><span class='op'>(</span><span class='fl'>1</span>, shape <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>, rate <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+
+<span class='kw'>for</span> <span class='op'>(</span><span class='va'>k</span> <span class='kw'>in</span> <span class='fl'>2</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>)</span> <span class='op'>{</span>
+  <span class='co'># draw a mean</span>
+  <span class='va'>b0_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'>post_mean</span><span class='op'>(</span>
+    y_vector <span class='op'>=</span> <span class='va'>y_invented</span> <span class='op'>-</span> <span class='va'>x_invented</span> <span class='op'>*</span> <span class='va'>b1_chain</span><span class='op'>[</span><span class='va'>k</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>,
+    known_sigma <span class='op'>=</span> <span class='va'>observation_sd_chain</span><span class='op'>[</span><span class='va'>k</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>,
+    prior_mean <span class='op'>=</span> <span class='fl'>10</span>,
+    prior_sd <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span>
+  <span class='va'>b1_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'>post_mean</span><span class='op'>(</span>
+    y_vector <span class='op'>=</span> <span class='op'>(</span><span class='va'>y_invented</span> <span class='op'>-</span> <span class='va'>b0_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span><span class='op'>)</span><span class='op'>*</span><span class='va'>x_invented</span>,
+    known_sigma <span class='op'>=</span> <span class='va'>observation_sd_chain</span><span class='op'>[</span><span class='va'>k</span> <span class='op'>-</span> <span class='fl'>1</span><span class='op'>]</span>,
+    prior_mean <span class='op'>=</span> <span class='fl'>0</span>,
+    prior_sd <span class='op'>=</span> <span class='fl'>2</span>, 
+    n <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>x_invented</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
+  <span class='va'>observation_sd_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fu'>post_sd</span><span class='op'>(</span>
+    y_vector <span class='op'>=</span> <span class='va'>y_invented</span>, 
+    known_mean <span class='op'>=</span> <span class='va'>b0_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span> <span class='op'>+</span> <span class='va'>x_invented</span> <span class='op'>*</span> <span class='va'>b1_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span>,
+    prior_alpha <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>,
+    prior_beta <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+<span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>3</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>b0_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_intercept</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>b1_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_slope</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>observation_sd_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_observation_sd</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-19-1.png" width="624" />
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'># plot these regression lines</span>
+
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>x_invented</span>, <span class='va'>y_invented</span><span class='op'>)</span>
+
+<span class='kw'>for</span> <span class='op'>(</span><span class='va'>k</span> <span class='kw'>in</span> <span class='fl'>200</span><span class='op'>:</span><span class='fl'>220</span><span class='op'>)</span><span class='op'>{</span>
+  <span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>a <span class='op'>=</span> <span class='va'>b0_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span>, b <span class='op'>=</span> <span class='va'>b1_chain</span><span class='op'>[</span><span class='va'>k</span><span class='op'>]</span><span class='op'>)</span>
+<span class='op'>}</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-20-1.png" width="624" /></p>
+</div>
+<p>could also plot some interesting posterior predictive plots in this way.</p>
+<h2 id="metropolis-hastings-and-gibbs-at-the-same-time">Metropolis hastings and gibbs at the same time</h2>
+<p>Sometimes you will have a model for which you can’t (or don’t want to) use conjugate posteriors for each of the conditional distributions.</p>
 <h2 id="clara-coffee-example">Clara Coffee Example</h2>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2725,7 +3026,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_point.html'>geom_point</a></span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-12-1.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-21-1.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#' what are the response distribution?</span>
 <span class='co'>#'</span>
@@ -2741,7 +3042,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>x</span>, shape <span class='op'>=</span> <span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span>, rate <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-12-2.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-21-2.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>sigma_coffee</span> <span class='op'>&lt;-</span> <span class='fl'>1</span><span class='op'>/</span><span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>rgamma</a></span><span class='op'>(</span><span class='fl'>1</span>, shape <span class='op'>=</span> <span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span>, rate <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span><span class='op'>)</span><span class='op'>)</span>
 <span class='va'>mean_coffee</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>21</span>, <span class='fl'>3</span><span class='op'>)</span>
@@ -2762,7 +3063,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_point.html'>geom_point</a></span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-12-3.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-21-3.png" width="624" /></p>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -2777,7 +3078,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 </code></pre>
 </div>
 </div>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
