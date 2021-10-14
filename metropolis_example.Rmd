@@ -15,7 +15,9 @@ knitr::opts_chunk$set(echo = TRUE)
 This is a quick description of one way to write the Metropolis algorithm in R. 
 
 
-The full code is here, with a description of each part below.  The chunk below is ready to copy and paste for your own experiments! 
+The full code is here, with a description of each part below.  
+The chunk below is ready to copy and paste for your own experiments! 
+
 ```{r}
 # Helper function to create log likelihoods
 make_likelihood <- function(f = dpois){

@@ -13,17 +13,43 @@ knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages(library(tidyverse))
 ```
 
-Minerva and Athena quote from McElreath
-
-putting things in boxes
-
-* conjugacy 
-* 
-
-
-## Conjugate prior review
+## Why we do what we do
 
 In bayesian statistics we use probability distributions to measure uncertainty about the parameter values we care about. 
+
+Because we measure uncertainty with probability, that means we work in probability distributions. 
+We begin with distributions, and we end with distributions.
+The beginning distributions express all we want to say about what our parameters are. 
+They come first, and are called the "prior" distributions.
+After we collect data and apply some model to relate it, we find ourselves with a new set of distributions. 
+Because these come *after* the process of data collection and model creation, this is called the "posterior".
+
+This means we are applying Bayes rule. This shows us how to update our priors to reflect what we learned from the experiment and model building:
+
+$$
+\begin{align}
+[\theta_1, \theta_2 | \bf y] &\propto [\theta_1, \theta_2, \bf y] \\
+&\propto  [\bf y | \theta_1, \theta_2][\theta_1][\theta_2]\\
+
+\end{align}
+$$
+
+Refreshing questions: 
+* which of these is the likelihood? Which is the prior? 
+* why is it OK to use something _proportional to_ ($\propto$) what we want?
+
+The whole goal here is to get this posterior distribution. There are many ways to do this! 
+This workshop is about some of them.
+
+* **Conjugate priors** -- works for 1-parameter problems. Gives you the literal equation of the posterior distribution. Only directly useful for very simple problems. Becomes the absolute star of the show with Gibbs Sampling.
+* **Laplace Approximation** -- very handy, useful best guess for many multi-parameter models; we're not doing it. 
+* **Metropolis** -- A venerable classic for sampling simple models. You have to propose random "jumps" around the distribution, and these need to be symmetric
+* **Metropolis-Hastings** -- same as Metropolis, but the jumps get to be _asymmetric_.
+* **Gibbs sampling** -- A wonderful technique for simplifying complex problems. Requires that priors be chosen to make conjugate pairs with likelihoods. 
+* **Metropolis-in-Gibbs** -- is a Deluxe Combo of the previous two. 
+* **HMC etc** -- Hamiltonian Monte Carlo is an advanced modern way of doing the same thing. Sets you free to use the priors that work for your question, not the ones that work for your math.
+
+## Conjugate prior review
 
 classic example is the binomial and beta distributions 
 
@@ -78,7 +104,7 @@ First, use the conjugate prior to the binomial (beta distribution).
 curve(dbeta(x, 2,5))
 ```
 
-This might be a reasonable first guess. but what does it actually mean? we need to do predictions to make sure.
+This might be a reasonable first guess. But what does it actually mean? we need to do predictions to make sure.
 
 ```{r}
 possible_probabilities <- rbeta(300, 2, 5)
@@ -107,18 +133,60 @@ abline(v =(2 + lived)/(2 + lived + 5 + died), col = "red")
 
 But what if we *didn't* want to do this?
 
-## Metropolis
+# MCMC in general
+
+The objective of MCMC algorithm is to simulate parameters from a complex posterior distribution.
+
+Rather than measure the *absolute* probability of different parameter values:
+
+$$
+[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
+$$
+
+we sample, and evaluate the *relative* probability of two possible parameter values:
+
+$$
+\frac{[\theta^{new}|y]}{[\theta^k|y]} = \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}
+$$
+
+In this way, we can sample a probability distribution ( $[\theta|y]$ ) using only something _proportional_ to that distribution ( $[y|\theta][\theta]$ ) 
+
+## The Metropolis Algorithm
+
+* Draw $\theta^{new}$ from a _symmetric_ distribution centered on $\theta^{k}$ (i.e. in the $k$th interation, the current value)
+e.g. $\theta^{new} \sim N(\theta^{k}, \sigma_{tune})$
+* Calculate the ratio R:
+
+$$
+R = \text{min}\left( 1, \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}\right)
+$$
+
+This is the probability of acceptance. In other words, if the ratio is greater than one, that means the proposal is for a more probable value. We'll always take it. 
+If the ratio is less than 1, that means the new proposal is less probable than the value we have already. However, there's a chance we'll take it anyway.
+
+* Test to see if `runif(1, min=0, max=1)` $< R$. if so, set $\theta^{k + 1} = \theta^{new}$
+
+* **Discussion question**: why should we accept "worse" parameter values? Why is it good to sometimes stay in the same place? 
+
 
 Suppose we had written the model like this:
 
 $$
 \begin{align}
 y &\sim \text{Binomial}(p, N) \\
-logit(p) &\sim \text{Normal}(1, 1)
+\text{logit}(p)  &= \alpha\\ 
+\alpha &\sim \text{Normal}(1, 1)
 \end{align}
 $$
 
-or could also be said:
+Remember that the binomial distribution is written as:
+
+$$
+{n \choose k} p^k (1-p)^{n-k}
+$$
+
+the two lines in equation 1 are just a shorthand for saying "replace $p$ with the inverse logit of $\alpha$". 
+We could also write it this way, literally replacing $p$ with that function
 
 $$
 \begin{align}
@@ -127,7 +195,35 @@ y &\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1-\fr
 \end{align}
 $$
 
-Now we have no conjugate posterior
+Another quick reminder, remember that the logistic function is a traditional way of squishing any real number into the interval $(0,1)$:
+
+$$
+\frac{e^x}{1 + e^x}
+$$
+
+```{r}
+curve(exp(x)/(1 + exp(x)),
+      xlim = c(-4, 4), ylim = c(0, 1))
+```
+
+### Sampling this model: the Metropolis algorithm
+
+Once again, our model is:
+
+$$
+\begin{align}
+y &\sim \text{Binomial}(p, N) \\
+\text{logit}(p)  &= \alpha\\ 
+\alpha &\sim \text{Normal}(1, 1)
+\end{align}
+$$
+
+Now we have no conjugate posterior for $\alpha$.
+However, just because we can't calculate the distribution doesn't mean we can't sample it!
+
+We can use the metropolis algorithm.
+
+
 
 ```{r}
 
@@ -141,12 +237,24 @@ normal_loglike <- function(val, mean_prior, sd_prior){
   dnorm(val, mean = mean_prior, sd = sd_prior, log = TRUE)
 }
 
+
+# define our function
 logistic_curve <- function(x) exp(x)/(1 + exp(x))
 
 ## function to use these to calculate the value of the numerator in Bayes Formula
 numerator <- function(v, data)  {
   binomial_loglike(data_vec = data, prob_new = logistic_curve(v)) + 
     normal_loglike(val = v, mean = -1, sd = 2)
+}
+
+## function to calculate the acceptance ratio
+accept_probability <- function(new_value, old_value, data_to_use) {
+  r <- exp(numerator(v = new_value, data = data_to_use) - 
+        numerator(v = old_value, data = data_to_use))
+  
+  p_accept <- min(1, r)
+  
+  return(p_accept)
 }
 
 # proposal function to make new parameter values.
@@ -156,23 +264,22 @@ propose_new <- function(x, sig_tune) rnorm(1, mean = x, sd = sig_tune)
 metropolis <- function(dataset,
                        n_samples,
                        tune_parameter,
-                       start_value, 
-                       numerator_function = numerator){
+                       start_value){
   chain <- numeric(n_samples)
+  
   chain[1] <- start_value
   
-  for (i in 2:length(chain)){
+  for (i in 2:length(chain)) {
     
-    start <- chain[i - 1]
+    old <- chain[i - 1]
     
-    new <- propose_new(start, sig_tune = tune_parameter)
+    new <- propose_new(old, sig_tune = tune_parameter)
     
-    r <- exp(numerator_function(v = new, data = dataset) - 
-               numerator_function(v = start, data = dataset))
+    p_accept <- accept_probability(new_value = new,
+                                   old_value = old, 
+                                   data_to_use = dataset)
     
-    p_accept <- min(1, r)
-    
-    chain[i] <- ifelse(runif(1) < p_accept, new, start)
+    chain[i] <- ifelse(runif(1) < p_accept, new, old)
   }
   return(chain)
 }
@@ -274,7 +381,193 @@ $$
 \beta + \frac{\sum (y_i - \mu)^2}{2}\right)
 $$
 
+### let's do it
 
+To implement this model we need to write functions that will do each of these things in turn.
+
+```{r}
+# calculate the posterior normal distribution for the data and a known variance
+
+post_mean <- function(y_vector, known_sigma,
+                      prior_mean, prior_sd,
+                      n = length(y_vector)){
+  numerator_mean <- (prior_mean/prior_sd^2 + sum(y_vector) / known_sigma^2)
+  denominator_mean <- (1 / prior_sd^2 + n / known_sigma^2)
+  
+  new_mean <-  numerator_mean / denominator_mean
+    
+  new_var <- 1/denominator_mean
+  
+  rnorm(1, mean = new_mean, sd = sqrt(new_var))
+}
+
+# fun to play with this! make sure it makes sense! 
+post_mean(y_vector = c(2,4,1,5), .1, 7, 2)
+
+```
+
+```{r}
+post_sd <- function(y_vector, known_mean, prior_alpha, prior_beta){
+  
+  new_alpha <- prior_alpha + length(y_vector) / 2
+  
+  new_beta <- prior_beta + sum((y_vector - known_mean)^2) / 2
+  
+  inverse_variance <- rgamma(n = 1, shape = new_alpha, rate = new_beta)
+  
+  sd_sample <- sqrt(1/inverse_variance)
+  return(sd_sample)
+}
+
+post_sd(c(2,4,1,5), known_mean = 3, prior_alpha = 2^2/2^2, prior_beta = 2/2^2)
+
+sd(c(2,4,1,5))
+```
+
+```{r}
+true_mean <- 24
+true_sd <- 7
+
+y_data <- rnorm(400, mean = true_mean, sd = true_sd)
+
+# gibbs process
+n_iterations <- 2000
+mean_chain <- numeric(n_iterations)
+sd_chain <- numeric(n_iterations)
+
+
+# sample to start -- could be anything, might as well be priors
+mean_chain[1] <- rnorm(1, mean = 10, sd = 5)
+sd_chain[1] <- rgamma(1, shape = 3^2/2^2, rate = 3/2^2)
+
+for (k in 2:n_iterations) {
+  # draw a mean
+  mean_chain[k] <- post_mean(y_vector = y_data,
+                             known_sigma = sd_chain[k - 1],
+                             prior_mean = 10,
+                             prior_sd = 5)
+  sd_chain[k] <- post_sd(y_vector = y_data, 
+                         known_mean = mean_chain[k],
+                         prior_alpha = 3^2/2^2,
+                         prior_beta = 3/2^2)
+}
+
+par(mfrow = c(2,1))
+plot(mean_chain)
+abline(h = true_mean, col = "red", lwd = 2)
+plot(sd_chain)
+abline(h = true_sd, col = "red", lwd = 2)
+par(mfrow = c(1,1))
+```
+
+You can see that the chains are almost exactly what we want.
+
+```{r}
+curve(dnorm(x, mean = true_mean, sd = true_sd),
+      xlim = c(true_mean - 4 * true_sd,
+               true_mean + 4 * true_sd), 
+      lwd = 2, col = "red", ylim = c(0, 0.07))
+
+for (i in 20:30) {
+  curve(dnorm(x, mean = mean_chain[i], sd = sd_chain[i]), add = TRUE, lty = 2)
+}
+```
+
+Are the posterior medians close to the real values?
+
+```{r}
+median(mean_chain[100:n_iterations])
+true_mean
+
+median(sd_chain[100:n_iterations])
+true_sd
+```
+
+Play with these values and see if you can break this algorithm.
+
+## Three parameters at once
+
+Imagine that you are doing a simple linear regression and you want to get three parameters: the slope, the intercept, and the variance of the observations.
+
+We perform the same procedure, looking for gibbs samples where we can. 
+
+<tk write model definiton>
+<tk use DAGS to draw the models?>
+
+```{r}
+n_invented <- 30000
+x_invented <- runif(n = n_invented, -2, 2) 
+
+true_intercept <- 50
+true_slope <- 2
+
+true_observation_sd <- 1.5
+
+y_invented <- rnorm(n = n_invented, 
+                    mean = true_intercept + true_slope*x_invented, 
+                    sd = true_observation_sd)
+
+plot(x_invented, y_invented)
+```
+
+```{r}
+# gibbs process
+n_iterations <- 2000
+b0_chain <- numeric(n_iterations)
+b1_chain <- numeric(n_iterations)
+observation_sd_chain <- numeric(n_iterations)
+
+
+# sample to start -- could be anything, might as well be priors
+b0_chain[1] <- rnorm(1, mean = 10, sd = 5)
+b1_chain[1] <- rnorm(1, mean = 0, sd = 2)
+observation_sd_chain[1] <- rgamma(1, shape = 3^2/2^2, rate = 3/2^2)
+
+for (k in 2:n_iterations) {
+  # draw a mean
+  b0_chain[k] <- post_mean(
+    y_vector = y_invented - x_invented * b1_chain[k - 1],
+    known_sigma = observation_sd_chain[k - 1],
+    prior_mean = 10,
+    prior_sd = 5)
+  b1_chain[k] <- post_mean(
+    y_vector = (y_invented - b0_chain[k])*x_invented,
+    known_sigma = observation_sd_chain[k - 1],
+    prior_mean = 0,
+    prior_sd = 2, 
+    n = sum(x_invented^2))
+  observation_sd_chain[k] <- post_sd(
+    y_vector = y_invented, 
+    known_mean = b0_chain[k] + x_invented * b1_chain[k],
+    prior_alpha = 3^2/2^2,
+    prior_beta = 3/2^2)
+}
+
+par(mfrow = c(1,3))
+plot(b0_chain[100:n_iterations])
+abline(h = true_intercept, col = "red", lwd = 2)
+plot(b1_chain[100:n_iterations])
+abline(h = true_slope, col = "red", lwd = 2)
+plot(observation_sd_chain[100:n_iterations])
+abline(h = true_observation_sd, col = "red", lwd = 2)
+par(mfrow = c(1,1))
+```
+
+```{r}
+# plot these regression lines
+
+plot(x_invented, y_invented)
+
+for (k in 200:220){
+  abline(a = b0_chain[k], b = b1_chain[k])
+}
+```
+
+could also plot some interesting posterior predictive plots in this way.
+
+## Metropolis hastings and gibbs at the same time
+
+Sometimes you will have a model for which you can't (or don't want to) use conjugate posteriors for each of the conditional distributions. 
 
 
 ## Clara Coffee Example
