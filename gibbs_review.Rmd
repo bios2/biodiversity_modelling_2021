@@ -13,8 +13,12 @@ knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages(library(tidyverse))
 ```
 
+Minerva and Athena quote from McElreath
 
-## Sampling from a distribution
+putting things in boxes
+
+* conjugacy 
+* 
 
 
 ## Conjugate prior review
@@ -23,14 +27,45 @@ In bayesian statistics we use probability distributions to measure uncertainty a
 
 classic example is the binomial and beta distributions 
 
-(proof on the board, optional)
+(proof on the board??)
+
+## Seed survival part I 
+
+Let's imagine an experiment where we place exactly 42 seeds in experimental plots. We use 30 experimental plots.
+
+We want to estimate a probability of germination for these seedlings
+
+Our model looks like this:
+
+$$
+\begin{align}
+y &\sim \text{Binomial}(p_{\text{survival}}, N)\\
+p_{\text{survival}} &\sim \text{Beta}(2,5)\\
+\end{align}
+$$
+
+in English, this means:
+
+* We thing that the number of seedlings which germinate will follow a Binomial distribution. This means that out of a total of 42, some survive. The probability for any surviving is the same: $p_{\text{survival}}$
+* 
+
+$$
+[p_{\text{survival}} | ]
+$$
+
+
+$$
+
+$$
+
+
 
 ```{r}
 ## start with some survival data -- out of 42
-true_prob <- 0.03
+true_prob <- 0.7
 
 set.seed(1859)
-n_surviving <- rbinom(n = 3000, size = 42, prob = true_prob)
+n_surviving <- rbinom(n = 300, size = 42, prob = true_prob)
 
 hist(n_surviving, xlim = c(0, 42))
 ```
@@ -46,7 +81,7 @@ curve(dbeta(x, 2,5))
 This might be a reasonable first guess. but what does it actually mean? we need to do predictions to make sure.
 
 ```{r}
-possible_probabilities <- rbeta(30, 2, 5)
+possible_probabilities <- rbeta(300, 2, 5)
 
 hist(rbinom(30, 42, possible_probabilities), xlim = c(0, 42))
 
@@ -97,16 +132,21 @@ Now we have no conjugate posterior
 ```{r}
 
 ## define likelihoods for our problem
-binomial_loglike <- function(data_vec, prob_new)  sum(dbinom(data_vec, size = 42, 
-                                                             prob = prob_new, log = TRUE))
+binomial_loglike <- function(data_vec, prob_new){
+  sum(dbinom(data_vec, size = 42, 
+             prob = prob_new, log = TRUE))
+}
 
 normal_loglike <- function(val, mean_prior, sd_prior){
   dnorm(val, mean = mean_prior, sd = sd_prior, log = TRUE)
 }
 
+logistic_curve <- function(x) exp(x)/(1 + exp(x))
+
 ## function to use these to calculate the value of the numerator in Bayes Formula
 numerator <- function(v, data)  {
-  binomial_loglike(data_vec = data, prob_new = dlogis(v)) + normal_loglike(val = v, mean = -1, sd = 2)
+  binomial_loglike(data_vec = data, prob_new = logistic_curve(v)) + 
+    normal_loglike(val = v, mean = -1, sd = 2)
 }
 
 # proposal function to make new parameter values.
@@ -138,9 +178,12 @@ metropolis <- function(dataset,
 }
 
 
-chain <- metropolis(dataset = n_surviving, n_samples = 1000, tune_parameter = 0.2, start_value = 0)
+chain <- metropolis(dataset = n_surviving,
+                    n_samples = 3000,
+                    tune_parameter = 0.2, 
+                    start_value = 0)
 
-plot(chain[300:1000], type = "l")
+plot(chain[300:3000], type = "l")
 ```
 
 ```{r}
@@ -149,8 +192,10 @@ hist(chain[300:5000])
 
 
 ```{r}
-hist(plogis(chain[300:5000]))
+hist(plogis(chain[200:5000]), xlim = c(0.6,.9), probability = TRUE)
 abline(v = true_prob)
+
+curve(dbeta(x, 2 + lived, 5 + died), add = TRUE, lty = 2)
 ```
 
 
@@ -201,25 +246,35 @@ $$
 \begin{align}
 y &\sim \text{Normal}(\mu, \sigma) \\
 \mu &\sim \text{Normal}(10,5) \\
-\frac{1}{\sigma^2} &\sim \text{Gamma}(15, 7)
+\frac{1}{\sigma^2} &\sim \text{Gamma}(3^2/2^2, 3/2^2)
 \end{align}
 $$
 
 ```{r}
-curve(dgamma(x, 15, 7), xlim = c(0, 5))
+
+rg <- rgamma(1000, shape = 3^2/2^2, rate = 3/2^2)
+mean(rg)
+sd(rg)
+
+curve(dgamma(x, shape = 3^2/2^2, rate = 3/2^2), xlim = c(0, 5))
 ```
 
 if the variance is known, the posterior for the mean is a normal distribution:
 
 $$
-\text{Normal}\left(\frac{\frac{10}{5}+ \frac{\sum{y}}{\sigma^2}}{\frac{1}{5^2} + \frac{n}{\sigma^2}}, \left(\frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
+\mu' \sim \text{Normal}\left(\frac{\frac{10}{5}+ \frac{\sum{y}}{\sigma^2}}{\frac{1}{5^2} + \frac{n}{\sigma^2}}, \left(\frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
 $$
+
+Note that $10$ is the prior mean and $5$ is the prior variance for $\mu$, the mean of the distribution.
 
 if the mean is known, then the posterior distribution for the variance is an inverse gamma:
 
 $$
-\frac{1}{\sigma^2} \sim \text{gamma}\left(\alpha + \frac{n}{2}, \frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
+\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
+\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
 $$
+
+
 
 
 ## Clara Coffee Example
@@ -309,7 +364,20 @@ clara_coffee_prior$fake_obs <- rnorm(n = nrow(clara_coffee),
 ggplot(clara_coffee_prior, aes(x = Coffee_extraction, y = fake_obs)) +
   geom_point()
 
+
+
 ```
 
 
+```{r eval=FALSE}
+library(brms)
+
+coffee_formula <- bf(Coffee_extraction ~ t_centered)
+
+get_prior(coffee_formula, data = clara_coffee_prior)
+
+cafe_stan <- brm(Coffee_extraction ~ t_centered,
+                     data = clara_coffee_prior, )
+
+```
 

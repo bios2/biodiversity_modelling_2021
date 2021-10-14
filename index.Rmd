@@ -64,7 +64,7 @@ knitr::kable(head(states, n = 2))
 ```
 
 
-
+* [Gibbs Sampler Example](gibbs_review.html): guided step-by-step approach for programming a gibbs sampler
 * [Cumulative exercise](cumulative_exercise.html) in "collecting" a statistical distribution for use in practice.
 * [Simulated annealing code](simulated_annealing.html), presented in 2 styles.
 * [Metropolis hastings code](metropolis_example.html)
