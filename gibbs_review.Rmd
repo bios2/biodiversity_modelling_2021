@@ -355,9 +355,10 @@ curve(dbeta(x, 2 + lived, 5 + died), add = TRUE, lty = 2)
 ```
 
 
-Rejection
+### The weakness of Metropolis
 
-<make a plot of rejections?
+Metropolis sampling will work, but sometimes we use MUCH more computer power than we need.
+Let's see how many proposals are rejected in our sampling.
 
 ```{r}
 rejects <- zapsmall(chain[2:length(chain)] - chain[1:(length(chain) - 1)] )
@@ -369,7 +370,7 @@ sum(rejects == 0)  / length(chain)
 
 lots of rejection of samples. That's not very efficient! 
 
-## Metropolis-Hastings 
+## Metropolis-Hastings Algorithm -- asymmetrical jumps
 
 See the [slides on this part here](https://bios2.github.io/biodiversity_modelling_2021/slides/12_Bayes#49)
 
@@ -405,7 +406,6 @@ then finally
 $$
 R = \text{min}( 1, r)
 $$
-
 
 
 Let's go (back) to our normal example and try this out.
@@ -532,7 +532,7 @@ accept_probability <- function(new_value, old_value,
 }
 ```
 
-The proposal distribution, centered on a value (e.g. 9) should be the same as the proposal density, centred on the same value.
+The proposal distribution, centered on a value (e.g. 9) should be the same as the proposal density, centered on the same value.
 ```{r}
 
 replicate(300, propose_new_val(9, 0.1)) %>% hist(probability = TRUE)
@@ -541,11 +541,11 @@ curve(propose_density(jump_to = x, jump_from = 9, sig_tune = 0.1), xlim = c(5,14
 ```
 
 
-
 ```{r }
 # fake some data
 set.seed(1859)
-weights <- rnorm(1000, mean = 50, sd = 3)
+correct_sd <- 3
+weights <- rnorm(1000, mean = 50, sd = correct_sd)
 
 # set tune parameter
 tune_parameter <- .2
@@ -554,7 +554,6 @@ n_samples <- 5000
 
 #start chain
 chain <- numeric(n_samples)
-
 
 # start value
 chain[1] <- 7
@@ -581,6 +580,7 @@ plot(chain[300:n_samples], type = "l")
 ```{r}
 
 plot(density(chain[300:n_samples]))
+abline(v = correct_sd)
 ```
 
 ```{r}
@@ -588,11 +588,14 @@ median(chain[300:n_samples])
 mean(chain[300:n_samples])
 ```
 
+Close to the true value of `correct_sd` which is `r correct_sd`.
+
+<div class = "blue">
+PSA: I made **MANY** errors while I was writing the above. If I had not started with simulated data, I would never have known!! Each time, I compared my answer to `correct_sd` and then went looking for the errors. Please remember to always do this, especially when you are coding an algorithm yourself! 
+</div>
 
 
 ### One Weird Trick to make calculating the posterior easy
-
-yes you read that right! 
 
 First we need to do a little math tweak to the model:
 
@@ -614,12 +617,66 @@ g &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 \end{align}
 $$
 
-I admit that this makes setting reasonable priors awkard, so let's go back to plotting:
+I admit that this makes setting reasonable priors awkward, so let's go back to plotting:
 
 ```{r}
-gs <- rgamma(500, 4^2/3^2, 4/3^2)
+gs <- rgamma(5000, 3.5^2/3^2, 3.5/3^2)
 
-hist(gs^-.5)
+plot(density(gs^-.5))
+```
+
+if the mean is known, then the posterior distribution for the variance is an inverse gamma:
+
+$$
+\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
+\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
+$$
+
+```{r}
+curve(dgamma(x, 3.5^2/3^2 + length(weights)/2, 3.5/3^2 + sum((weights - 50)^2)/2))
+```
+
+```{r}
+precision_values <- seq(0.01, .4, length.out = 3000)
+post_density <- dgamma(precision_values, 1^2/50^2 + length(weights)/2, 2/5^2 + sum((weights - 50)^2)/2)
+
+plot(x = precision_values^-.5, y = post_density)
+
+(precision_values^-.5)[which.max(post_density)]
+abline(v = correct_sd)
+```
+
+Compare to the Metropolis-Hastings approach
+
+```{r}
+hist(chain[300:n_samples], probability = FALSE)
+plot(x = precision_values^-.5, y = post_density, xlim = c(2.7, 3.4))
+lines(density(chain[300:n_samples]))
+```
+
+
+Calculate the posterior average
+
+```{r}
+
+set.seed(1859)
+correct_sd <- 7
+weights <- rnorm(1000, mean = 50, sd = correct_sd)
+
+prec_mean <- (.02^2/5^2 + length(weights)/2)/(.02/5^2 + sum((weights - 50)^2)/2)
+prec_mean^-.5
+```
+
+
+
+```{r}
+pp <- replicate(200, {
+weights <- rnorm(1e5, mean = 50, sd = correct_sd)
+
+prec_mean <- (.02^2/5^2 + length(weights)/2)/(.02/5^2 + sum((weights - 50)^2)/2)
+prec_mean^-.5})
+
+plot(density(pp))
 ```
 
 
@@ -782,6 +839,14 @@ true_sd
 
 Play with these values and see if you can break this algorithm.
 
+WE can also look at the pairs plot, like this
+
+```{r}
+plot(mean_chain[100:n_iterations], sd_chain[100:n_iterations])
+```
+
+This reveals if there are any correlations in the posterior. 
+
 ## Three parameters at once
 
 Imagine that you are doing a simple linear regression and you want to get three parameters: the slope, the intercept, and the variance of the observations.
@@ -792,7 +857,7 @@ We perform the same procedure, looking for gibbs samples where we can.
 <tk use DAGS to draw the models?>
 
 ```{r}
-n_invented <- 30000
+n_invented <- 300
 x_invented <- runif(n = n_invented, -2, 2) 
 
 true_intercept <- 50
