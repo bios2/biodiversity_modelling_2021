@@ -2407,7 +2407,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <span class='va'>x_obs</span>
 </code></pre>
 </div>
-<pre><code> [1] 5 4 4 5 3 3 5 3 2 3</code></pre>
+<pre><code> [1] 4 3 4 4 4 4 3 4 4 2</code></pre>
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>like_binom</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>p</span>, <span class='va'>d</span> <span class='op'>=</span> <span class='va'>x_obs</span><span class='op'>)</span><span class='op'>{</span>
   <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>exp</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Binomial.html'>dbinom</a></span><span class='op'>(</span><span class='va'>d</span>, size <span class='op'>=</span> <span class='fl'>6</span>, prob <span class='op'>=</span> <span class='va'>p</span>, log <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
@@ -2425,8 +2425,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>grid_searched</span><span class='op'>$</span><span class='va'>likelihood</span><span class='op'>)</span>
 </code></pre>
 </div>
-<pre><code>[1] 9.256717e-64 2.244243e-57 7.640335e-53 2.477663e-49 1.806653e-46
-[6] 4.692708e-44</code></pre>
+<pre><code>[1] 8.054429e-61 1.301903e-54 3.315918e-50 8.572279e-47 5.187876e-44
+[6] 1.149997e-41</code></pre>
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://ggplot2.tidyverse.org'>ggplot2</a></span><span class='op'>)</span>
 <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span><span class='va'>grid_searched</span>, <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>p</span>, y <span class='op'>=</span> <span class='va'>likelihood</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
