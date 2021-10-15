@@ -8,9 +8,15 @@ output:
     toc_float: true
 ---
 
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages(library(tidyverse))
+library(palmerpenguins)
 ```
 
 ## Why we do what we do
@@ -29,14 +35,19 @@ This means we are applying Bayes rule. This shows us how to update our priors to
 $$
 \begin{align}
 [\theta_1, \theta_2 | \bf y] &\propto [\theta_1, \theta_2, \bf y] \\
-&\propto  [\bf y | \theta_1, \theta_2][\theta_1][\theta_2]\\
-
+&\propto  [\bf y | \theta_1, \theta_2][\theta_1][\theta_2] \\
 \end{align}
 $$
 
+
+<div class = "blue">
+
 Refreshing questions: 
+
 * which of these is the likelihood? Which is the prior? 
 * why is it OK to use something _proportional to_ ($\propto$) what we want?
+
+</div>
 
 The whole goal here is to get this posterior distribution. There are many ways to do this! 
 This workshop is about some of them.
@@ -51,9 +62,59 @@ This workshop is about some of them.
 
 ## Conjugate prior review
 
-classic example is the binomial and beta distributions 
 
-(proof on the board??)
+$$
+\begin{align}
+[p|\text{trials}, \text{successes}, \alpha, \beta] &\propto [\text{successes} | \text{trials}, p] \times [p | \alpha , \beta]\\
+&\propto \text{Binomial}(p,\text{trials}) \times \text{Beta}(\alpha, \beta)\\
+&\propto{\text{trials} \choose \text{successes}}p^\text{successes}(1-p)^{\text{trials}-\text{successes}} \times \text{B} p^{\alpha - 1}(1-p)^{\beta - 1}\\
+&\propto p^\text{successes}(1-p)^{\text{trials}-\text{successes}} \times p^{\alpha - 1}(1-p)^{\beta - 1}\\
+&\propto p^{\alpha + \text{successes} - 1}(1-p)^{ \beta + \text{trials}-\text{successes} - 1}
+\end{align}
+$$
+
+Now we only have to realize that the last line is a beta distribution, without the magic number that we called "$B$" before. 
+This value is what's called a "normalizing constant". 
+Normalizing constants make the proportional expression (like the one above) into a probability distribution 
+
+<aside> remember that probability distributions sum to 1. So we just need to divide by some magic number that makes the whole thing, whatever it is, sum to 1. That magic number is our normalizing constant </aside>
+
+$$
+[p|\text{trials}, \text{successes}, \alpha, \beta] = \text{Beta}(\alpha + \text{successes} - 1, \beta + \text{trials}-\text{successes} - 1)
+$$
+
+So the posterior distribution is a Beta distribution, just like the prior was! We have it already, with no need for any fancy sampling approach. 
+
+This also gives us an easy interpretation of what the parameters of any Beta distribution are: $\alpha$ is something like the number of successes, and $\beta$ is something like the number of failures^[Not EXACTLY successes and failures because $\alpha$ and $\beta$ can be decimal numbers (e.g. "1.5") and obviously real successes and failures can't be. You can think of these as "pseudosuccesses" and "pseudofailures" or, as I prefer, "successosity" and "failishness" ].
+
+## Application: Clutch success in the Palmer Penguins
+
+```{r}
+pr <- read.csv(path_to_file("penguins_raw.csv"))
+penguins_raw %>% 
+  count(Species, `Clutch Completion`) %>% 
+  pivot_wider(names_from = `Clutch Completion`, values_from = n) %>% 
+  knitr::kable(.)
+```
+
+With this, we can calculate the posterior probability of clutch success for each penguin species. 
+
+$$
+\begin{align}
+n_{\text{succeeded}} &\sim \text{Binomial}(p_{\text{success}}, n_{\text{nesting}})\\
+p_{\text{success}} &\sim \text{Beta}(7,3)\\
+\end{align}
+$$
+
+```{r}
+curve(dbeta(x, 7, 3), ylim = c(0, 17))
+curve(dbeta(x, 138 + 7, 14 + 3), add = TRUE, lty = 2)
+curve(dbeta(x, 54 + 7, 14 + 3), add = TRUE, lty = 3)
+curve(dbeta(x, 116 + 7, 8 + 3), add = TRUE, lty = 4)
+legend(0,17, legend = c("prior", "Adelie", "Chinstrap", "Gentoo"), lty = 1:4)
+```
+
+
 
 ## Seed survival part I 
 
@@ -65,7 +126,7 @@ Our model looks like this:
 
 $$
 \begin{align}
-y &\sim \text{Binomial}(p_{\text{survival}}, N)\\
+y &\sim \text{Binomial}(p_{\text{survival}}, 42)\\
 p_{\text{survival}} &\sim \text{Beta}(2,5)\\
 \end{align}
 $$
@@ -74,16 +135,6 @@ in English, this means:
 
 * We thing that the number of seedlings which germinate will follow a Binomial distribution. This means that out of a total of 42, some survive. The probability for any surviving is the same: $p_{\text{survival}}$
 * 
-
-$$
-[p_{\text{survival}} | ]
-$$
-
-
-$$
-
-$$
-
 
 
 ```{r}
@@ -221,9 +272,7 @@ $$
 Now we have no conjugate posterior for $\alpha$.
 However, just because we can't calculate the distribution doesn't mean we can't sample it!
 
-We can use the metropolis algorithm.
-
-
+We can use the Metropolis algorithm.
 
 ```{r}
 
@@ -322,9 +371,255 @@ lots of rejection of samples. That's not very efficient!
 
 ## Metropolis-Hastings 
 
-The same, but we can use an asymmetrical proposal distribution.
+See [The slides on the topic]
 
-<example??>
+The same, but we can use an asymmetrical proposal distribution.  This means that we can jump in either direction, but one direction is more likely
+
+We need this, because sometimes our parameters are bounded! For example, the standard deviation of a normal distribution can never be negative. 
+
+Because our jumps are no longer symmetrical, we need to add a small correction factor 
+
+
+Sometimes you need an _asymmetrical_ distribution for your parameter. This happens when the parameter is bounded. 
+
+In this case, we need to adjust our calculation of $r$. Now in addition to the Likelihood and Prior, we have the Candidate distribution getting involved
+
+$$
+\frac{[y|\theta^{new}][\theta^{new}][\theta^{old}|\theta^{new}]}
+{[y|\theta^{old}][\theta^{old}][\theta^{old}|\theta^{new}]}
+$$ 
+
+Here's the same expression, but with more words substituted as a guide:
+
+.small[
+<p>
+$$
+r = \frac{\text{Likelihood}(\text{data}|\theta^{new}) \times \text{Prior}(\theta^{new}, \alpha, \beta) \times \text{Candidate}(\theta^{old}, \mu = \theta^{new}, \sigma_{tune})}{\text{Likelihood}(\text{data}|\theta^{old}) \times \text{Prior}(\theta^{old}, \alpha, \beta)\times \text{Candidate}(\theta^{new}, \mu = \theta^{old}, \sigma_{tune})}
+$$
+</p>
+]
+
+then finally 
+$$
+R = \text{min}( 1, r)
+$$
+
+
+
+Let's go (back) to our normal example and try this out.
+
+**We have to assume we KNOW the mean**. Later we'll see examples of what to do if you want to find two or more numbers at once! 
+
+```{r}
+
+weights <- rnorm(30, mean = 50, sd = 3)
+
+weights
+```
+
+Our model will be:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(50, \sigma) \\
+\sigma &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+
+Why this weird notation for the gamma distribution? 
+Here I'm using a classic trick called [Moment Matching](). 
+We do this because for almost all distributions with two parameters, the mean and standard deviation each depend on *BOTH* parameters. 
+This means that each parameter is also a function of *BOTH* the mean and the standard deviation. 
+That means we can't directly set the mean and variance of a distribution with one parameter each. <aside> except for the Normal distribution. The Normal is a beautiful weirdo which is why we love it </aside>.
+Instead, we "reparameterize" the distribution, which just means we use values that correspond to the average and the standard deviation (or something like it). This is really helpful when you're using these distributions for ecology! 
+
+for mean $\mu$ and standard devation $\sigma$, the Gamma distribution parameters are:
+
+$$
+\text{Gamma}\left(\frac{\mu^2}{\sigma^2}, \frac{\mu}{\sigma^2}\right)
+$$
+
+here's a quick demo to convince you:
+```{r}
+rand_gammas <- rgamma(500, shape = 4^2/3^2, rate = 4/3^2)
+hist(rand_gammas)
+mean(rand_gammas) # close to 4
+sd(rand_gammas) # close to 3
+```
+
+### Proposal distribution
+
+We also need a distribution for the _proposals_ we will try in the algorithm. 
+This distribution should be above 0, since we can't have a 0 variance. 
+The lognormal is a good choice (and is hopefully clear since it is not the same distribution as the gamma)
+
+What does $\text{lognormal}(2, 0.2)$ look like?
+
+```{r}
+hist(rlnorm(500, 2, .2))
+```
+
+### Code for Metropolis Hastings
+Let's do Metropolis Hastings. We begin as before, with an expression for the numerator of Bayes Rule:
+
+```{r}
+
+## define likelihoods for our problem
+normal_loglike <- function(data_vec, sd_value){
+  sum(dnorm(data_vec, mean = 50, sd = sd_value, log = TRUE))
+}
+
+gamma_loglike <- function(sd_value){
+  dgamma(sd_value, shape = 4^2/3^2, rate = 4/3^2, log = TRUE)
+}
+
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+## NOTE that the mean gets logged as it goes into rlnorm and dlnorm!! 
+## This is a very necessary detail 
+## read the help files (?rlnorm) to find out what the R functions expect
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+
+# proposal function to make new parameter values.
+propose_new_val <- function(old_value, sig_tune) {
+  rlnorm(1, mean = log(old_value), sd = sig_tune)
+}
+
+propose_density <- function(jump_to, jump_from, sig_tune) {
+  dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
+}
+
+## function to use these to calculate the value of the numerator in Bayes Formula
+## We are working on the LOG scale, so we have to ADD these together
+numerator <- function(v, data)  {
+  # likelihood
+  log_like <- normal_loglike(data_vec = data, sd_value = v)
+  # prior
+  log_prior <- gamma_loglike(sd_value = v)
+  
+  return(log_like + log_prior)
+}
+
+## function to calculate the acceptance ratio
+accept_probability <- function(new_value, old_value, 
+                               data_to_use, 
+                               tune_parameter) {
+  
+  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
+  new <- numerator(v = new_value, data = data_to_use)
+  old <- numerator(v = old_value, data = data_to_use)
+  
+  difference_log_scale <- new - old
+  
+  # use EXP to undo the LOG
+  r <- exp(difference_log_scale)
+  
+  # calculate the correction -- asymmetrical proposal
+  new_from_old <- propose_density(jump_to = new_value,
+                                  jump_from = old_value,
+                                  sig_tune = tune_parameter)
+  
+  old_from_new <- propose_density(jump_to = old_value,
+                                  jump_from = new_value,
+                                  sig_tune = tune_parameter)
+  
+  R <- r * (old_from_new / new_from_old)
+  
+  p_accept <- min(1, R)
+  
+  return(p_accept)
+}
+```
+
+The proposal distribution, centered on a value (e.g. 9) should be the same as the proposal density, centred on the same value.
+```{r}
+
+replicate(300, propose_new_val(9, 0.1)) %>% hist(probability = TRUE)
+curve(propose_density(jump_to = x, jump_from = 9, sig_tune = 0.1), xlim = c(5,14), add = TRUE)
+
+```
+
+
+
+```{r }
+# fake some data
+set.seed(1859)
+weights <- rnorm(1000, mean = 50, sd = 3)
+
+# set tune parameter
+tune_parameter <- .2
+# how long should the chain be? 
+n_samples <- 5000
+
+#start chain
+chain <- numeric(n_samples)
+
+
+# start value
+chain[1] <- 7
+
+for (i in 2:length(chain)) {
+  
+  old_val <- chain[i - 1]
+  
+  new_val <- propose_new_val(old_value = old_val, sig_tune = tune_parameter)
+  
+  p_accept <- accept_probability(new_value = new_val,
+                                 old_value = old_val, 
+                                 data_to_use = weights,
+                                 tune_parameter = tune_parameter)
+  
+  chain[i] <- ifelse(runif(1) < p_accept, new_val, old_val)
+}
+
+
+
+plot(chain[300:n_samples], type = "l")
+```
+
+```{r}
+
+plot(density(chain[300:n_samples]))
+```
+
+```{r}
+median(chain[300:n_samples])
+mean(chain[300:n_samples])
+```
+
+
+
+### One Weird Trick to make calculating the posterior easy
+
+yes you read that right! 
+
+First we need to do a little math tweak to the model:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(50, \sigma) \\
+\frac{1}{\sigma^2} &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+
+Now instead of setting the prior on $\sigma$ directly, we set the prior on the _inverse square_ of sigma! <aside>Why do we do the inverse square? Well, the square of the standard deviation is the variance. As we know, the larger the variance, the wider the distribution. The inverse variance has the opposite interpretation: the larger it is, the more narrow and focussed the distribution! This is called the "precision", and it is another common way to think about the Normal Distribution.</aside> 
+
+We can think of this as a kind of link function. Doing a bit of algebra, we can see that:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(50, g^{-1/2}) \\
+g &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+
+I admit that this makes setting reasonable priors awkard, so let's go back to plotting:
+
+```{r}
+gs <- rgamma(500, 4^2/3^2, 4/3^2)
+
+hist(gs^-.5)
+```
+
 
 ## Gibbs sampling
 
