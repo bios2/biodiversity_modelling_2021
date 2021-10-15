@@ -637,8 +637,8 @@ curve(dgamma(x, 3.5^2/3^2 + length(weights)/2, 3.5/3^2 + sum((weights - 50)^2)/2
 ```
 
 ```{r}
-precision_values <- seq(0.01, .4, length.out = 3000)
-post_density <- dgamma(precision_values, 1^2/50^2 + length(weights)/2, 2/5^2 + sum((weights - 50)^2)/2)
+precision_values <- seq(0.09, .15, length.out = 3000)
+post_density <- dgamma(precision_values, 2^2/50^2 + length(weights)/2, 2/5^2 + sum((weights - 50)^2)/2)
 
 plot(x = precision_values^-.5, y = post_density)
 
@@ -649,9 +649,34 @@ abline(v = correct_sd)
 Compare to the Metropolis-Hastings approach
 
 ```{r}
-hist(chain[300:n_samples], probability = FALSE)
 plot(x = precision_values^-.5, y = post_density, xlim = c(2.7, 3.4))
+hist(chain[300:n_samples], probability = TRUE, add= TRUE)
 lines(density(chain[300:n_samples]))
+```
+
+
+
+
+```{r}
+data_frame(v = chain[300:n_samples]) %>% 
+  ggplot(aes(x = v)) + 
+  geom_histogram(aes(y = ..density..),
+                 binwidth = .01, fill = "grey", color = "black") + 
+  geom_line(aes(x = sigma, y = density), data.frame(sigma = precision_values^-.5, 
+                                                     density = post_density*6/80))
+```
+
+
+```{r}
+data_frame(v = chain[300:n_samples]) %>% 
+  ggplot(aes(x = v)) + 
+  geom_histogram(aes(y = ..density..),
+                 binwidth = .01, fill = "grey", color = "black") + 
+  geom_line(aes(x = sigma, y = density), 
+            data = data_frame(sigma = seq(from = 2.6, to = 3.3, length.out = n_samples - 300), 
+                              density = dgamma(sigma^(-2),
+                                               shape = 2^2/5^2 + length(weights)/2,
+                                               rate = 2/5^2 + sum((weights - 50)^2)/2)))
 ```
 
 
@@ -692,7 +717,6 @@ assuming that all are correct except the first, sample a value for the first
 
 Assuming that sample was correct for the first, what is the second? 
 
-<cartoon image here> 
 
 ```{r}
 true_mean <- 31
