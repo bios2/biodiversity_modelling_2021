@@ -371,6 +371,8 @@ lots of rejection of samples. That's not very efficient!
 
 ## Metropolis-Hastings 
 
+See the [slides on this part here](https://bios2.github.io/biodiversity_modelling_2021/slides/12_Bayes#49)
+
 See [The slides on the topic]
 
 The same, but we can use an asymmetrical proposal distribution.  This means that we can jump in either direction, but one direction is more likely
