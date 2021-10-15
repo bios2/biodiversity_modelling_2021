@@ -3040,15 +3040,15 @@ g &amp;\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>precision_values</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span><span class='fl'>0.01</span>, <span class='fl'>.4</span>, length.out <span class='op'>=</span> <span class='fl'>3000</span><span class='op'>)</span>
-<span class='va'>post_density</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>precision_values</span>, <span class='fl'>1</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>50</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>weights</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span>, <span class='fl'>2</span><span class='op'>/</span><span class='fl'>5</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='op'>(</span><span class='va'>weights</span> <span class='op'>-</span> <span class='fl'>50</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>)</span>
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>precision_values</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span><span class='fl'>0.09</span>, <span class='fl'>.15</span>, length.out <span class='op'>=</span> <span class='fl'>3000</span><span class='op'>)</span>
+<span class='va'>post_density</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>precision_values</span>, <span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>50</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>weights</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span>, <span class='fl'>2</span><span class='op'>/</span><span class='fl'>5</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='op'>(</span><span class='va'>weights</span> <span class='op'>-</span> <span class='fl'>50</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>)</span>
 
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>precision_values</span><span class='op'>^</span><span class='op'>-</span><span class='fl'>.5</span>, y <span class='op'>=</span> <span class='va'>post_density</span><span class='op'>)</span>
 
 <span class='op'>(</span><span class='va'>precision_values</span><span class='op'>^</span><span class='op'>-</span><span class='fl'>.5</span><span class='op'>)</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/which.min.html'>which.max</a></span><span class='op'>(</span><span class='va'>post_density</span><span class='op'>)</span><span class='op'>]</span>
 </code></pre>
 </div>
-<pre><code>[1] 3.053205</code></pre>
+<pre><code>[1] 3.052446</code></pre>
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>correct_sd</span><span class='op'>)</span>
 </code></pre>
@@ -3058,16 +3058,39 @@ g &amp;\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 <p>Compare to the Metropolis-Hastings approach</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
-<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/hist.html'>hist</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='va'>n_samples</span><span class='op'>]</span>, probability <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
-</code></pre>
-</div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-24-1.png" width="624" />
-<div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>precision_values</span><span class='op'>^</span><span class='op'>-</span><span class='fl'>.5</span>, y <span class='op'>=</span> <span class='va'>post_density</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2.7</span>, <span class='fl'>3.4</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/hist.html'>hist</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='va'>n_samples</span><span class='op'>]</span>, probability <span class='op'>=</span> <span class='cn'>TRUE</span>, add<span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/lines.html'>lines</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/density.html'>density</a></span><span class='op'>(</span><span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='va'>n_samples</span><span class='op'>]</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-24-2.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-24-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>data_frame</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='va'>n_samples</span><span class='op'>]</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>ggplot</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>v</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_histogram</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>y <span class='op'>=</span> <span class='va'>..density..</span><span class='op'>)</span>,
+                 binwidth <span class='op'>=</span> <span class='fl'>.01</span>, fill <span class='op'>=</span> <span class='st'>"grey"</span>, color <span class='op'>=</span> <span class='st'>"black"</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_line</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>sigma</span>, y <span class='op'>=</span> <span class='va'>density</span><span class='op'>)</span>, <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>sigma <span class='op'>=</span> <span class='va'>precision_values</span><span class='op'>^</span><span class='op'>-</span><span class='fl'>.5</span>, 
+                                                     density <span class='op'>=</span> <span class='va'>post_density</span><span class='op'>*</span><span class='fl'>6</span><span class='op'>/</span><span class='fl'>80</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-25-1.png" width="624" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>data_frame</span><span class='op'>(</span>v <span class='op'>=</span> <span class='va'>chain</span><span class='op'>[</span><span class='fl'>300</span><span class='op'>:</span><span class='va'>n_samples</span><span class='op'>]</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>ggplot</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>v</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_histogram</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>y <span class='op'>=</span> <span class='va'>..density..</span><span class='op'>)</span>,
+                 binwidth <span class='op'>=</span> <span class='fl'>.01</span>, fill <span class='op'>=</span> <span class='st'>"grey"</span>, color <span class='op'>=</span> <span class='st'>"black"</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_line</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>sigma</span>, y <span class='op'>=</span> <span class='va'>density</span><span class='op'>)</span>, 
+            data <span class='op'>=</span> <span class='fu'>data_frame</span><span class='op'>(</span>sigma <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/seq.html'>seq</a></span><span class='op'>(</span>from <span class='op'>=</span> <span class='fl'>2.6</span>, to <span class='op'>=</span> <span class='fl'>3.3</span>, length.out <span class='op'>=</span> <span class='va'>n_samples</span> <span class='op'>-</span> <span class='fl'>300</span><span class='op'>)</span>, 
+                              density <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>sigma</span><span class='op'>^</span><span class='op'>(</span><span class='op'>-</span><span class='fl'>2</span><span class='op'>)</span>,
+                                               shape <span class='op'>=</span> <span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>5</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>weights</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span>,
+                                               rate <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>5</span><span class='op'>^</span><span class='fl'>2</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='op'>(</span><span class='va'>weights</span> <span class='op'>-</span> <span class='fl'>50</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-26-1.png" width="624" /></p>
 </div>
 <p>Calculate the posterior average</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -3093,7 +3116,7 @@ g &amp;\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/density.html'>density</a></span><span class='op'>(</span><span class='va'>pp</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-26-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-28-1.png" width="624" /></p>
 </div>
 <h2 id="gibbs-sampling">Gibbs sampling</h2>
 <div style="width:100%;height:0;padding-bottom:61%;position:relative;">
@@ -3107,7 +3130,6 @@ g &amp;\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 <p>Start with random values for each parameter</p>
 <p>assuming that all are correct except the first, sample a value for the first</p>
 <p>Assuming that sample was correct for the first, what is the second?</p>
-<p><cartoon image here></p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>true_mean</span> <span class='op'>&lt;-</span> <span class='fl'>31</span>
@@ -3141,7 +3163,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>x</span>, shape <span class='op'>=</span> <span class='fl'>3</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span>, rate <span class='op'>=</span> <span class='fl'>3</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-28-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-30-1.png" width="624" /></p>
 </div>
 <p>if the variance is known, the posterior for the mean is a normal distribution:</p>
 <p><span class="math display">\[
@@ -3238,7 +3260,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_sd</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-31-1.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-33-1.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
@@ -3257,7 +3279,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='op'>}</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-32-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-34-1.png" width="624" /></p>
 </div>
 <p>Are the posterior medians close to the real values?</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -3289,7 +3311,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>mean_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span>, <span class='va'>sd_chain</span><span class='op'>[</span><span class='fl'>100</span><span class='op'>:</span><span class='va'>n_iterations</span><span class='op'>]</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-34-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-36-1.png" width="624" /></p>
 </div>
 <p>This reveals if there are any correlations in the posterior.</p>
 <h2 id="three-parameters-at-once">Three parameters at once</h2>
@@ -3313,7 +3335,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>x_invented</span>, <span class='va'>y_invented</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-35-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-37-1.png" width="624" /></p>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
@@ -3358,7 +3380,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='fu'><a href='https://rdrr.io/r/graphics/abline.html'>abline</a></span><span class='op'>(</span>h <span class='op'>=</span> <span class='va'>true_observation_sd</span>, col <span class='op'>=</span> <span class='st'>"red"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-36-1.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-38-1.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span>mfrow <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>1</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
@@ -3375,7 +3397,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='op'>}</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-37-1.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-39-1.png" width="624" /></p>
 </div>
 <p>could also plot some interesting posterior predictive plots in this way.</p>
 <h2 id="metropolis-hastings-and-gibbs-at-the-same-time">Metropolis hastings and gibbs at the same time</h2>
@@ -3438,7 +3460,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_point.html'>geom_point</a></span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-38-1.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-40-1.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#' what are the response distribution?</span>
 <span class='co'>#'</span>
@@ -3454,7 +3476,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
 <span class='fu'><a href='https://rdrr.io/r/graphics/curve.html'>curve</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>dgamma</a></span><span class='op'>(</span><span class='va'>x</span>, shape <span class='op'>=</span> <span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span>, rate <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span><span class='op'>)</span>, xlim <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0</span>,<span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span>
 </code></pre>
 </div>
-<img src="gibbs_review_files/figure-html5/unnamed-chunk-38-2.png" width="624" />
+<img src="gibbs_review_files/figure-html5/unnamed-chunk-40-2.png" width="624" />
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>sigma_coffee</span> <span class='op'>&lt;-</span> <span class='fl'>1</span><span class='op'>/</span><span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/GammaDist.html'>rgamma</a></span><span class='op'>(</span><span class='fl'>1</span>, shape <span class='op'>=</span> <span class='op'>(</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span>, rate <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>4</span><span class='op'>)</span><span class='op'>)</span>
 <span class='va'>mean_coffee</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>21</span>, <span class='fl'>3</span><span class='op'>)</span>
@@ -3475,7 +3497,7 @@ y &amp;\sim \text{Normal}(\mu, \sigma) \\
   <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_point.html'>geom_point</a></span><span class='op'>(</span><span class='op'>)</span>
 </code></pre>
 </div>
-<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-38-3.png" width="624" /></p>
+<p><img src="gibbs_review_files/figure-html5/unnamed-chunk-40-3.png" width="624" /></p>
 </div>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
