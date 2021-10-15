@@ -19,6 +19,7 @@ Imports:
     xaringan,
     xaringanExtra (>= 0.5.4),
     tidyverse,
-    ggdag
+    ggdag,
+    palmerpenguins
 Remotes:  
     gadenbuie/xaringanExtra
