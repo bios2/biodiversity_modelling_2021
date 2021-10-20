@@ -631,7 +631,7 @@ curve(extraDistr::dinvgamma(x = x,
 
 Gibbs sampling is like knitting. Imagine you have several parameters and you're going to take posterior samples for each one. 
 
-```{r}
+```{r fig.show='animate'}
 vals <- expand_grid(y = 5:1, x = 1:3)
 
 pnames <- c("beta[0]", "beta[1]", "sigma")
@@ -670,7 +670,7 @@ The steps for this algorithm are similar to the previous ones:
 
 Let's begin by simulating some values from a normal distribution:
 
-```{r}
+```{r }
 true_mean <- 31
 true_sd <-  4
 sample_size <- 30
@@ -887,36 +887,27 @@ abline(v = 1/log((truemean^2 + truesd^2)/truemean^2))
 
 
 ```{r}
-# mean 2 sd = 3
 
-truemean <- 20
-truesd <- 9
-meanlog = log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2)
-sdlog = log((truemean^2 + truesd^2)/truemean^2)^.5
+truemean <- 15
+truesd <- 3
+sig <- .6
 
-#this sdlog thing is so weird!
-curve(log((truemean^2 + x^2)/truemean^2)^.5, xlim = c(0,200))
+ff <- rlnorm(2000,
+             meanlog = log(truemean), 
+             sdlog = sig)
 
-
-ff <- rlnorm(300,
-             meanlog = meanlog, 
-             sdlog = sdlog)
-
-hist(ff, probability = TRUE)
+ff %>% median
 
 sd(ff)
 
 curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 ,
-                            beta = 4),
-      xlim = c(0,5), ylim = c(0,1))
-
-curve(extraDistr::dinvgamma(x, 
                             alpha = 3 + length(ff)/2,
-                            beta = 4 + sum( (log(ff) - meanlog)^2 ) / 2),
-      add = TRUE
+                            beta = 4 + sum( (log(ff) - log(truemean))^2 ) / 2),
+      xlim = c(0,3)
+      # add = TRUE
 )
-abline(v = sdlog^2)
+abline(v = sig^2)
+
 
 ```
 
