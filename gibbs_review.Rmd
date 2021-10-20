@@ -628,13 +628,43 @@ curve(extraDistr::dinvgamma(x = x,
 
 <div style="width:100%;height:0;padding-bottom:61%;position:relative;"><iframe src="https://giphy.com/embed/3oEhmHmWP3Y9wQxoli" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/funny-lol-cartoon-3oEhmHmWP3Y9wQxoli">via GIPHY</a></p>
 
-Sample each parameter, keeping the others fixed. Let's consider just two for now:
 
-Start with random values for each parameter
+Gibbs sampling is like knitting. Imagine you have several parameters and you're going to take posterior samples for each one. 
 
-assuming that all are correct except the first, sample a value for the first
+```{r echo=FALSE}
+vals <- expand_grid(y = 5:1, x = 1:3)
 
-Assuming that sample was correct for the first, what is the second? 
+pnames <- c("beta[0]", "beta[1]", "sigma")
+
+vals <- mutate(vals, 
+               par = pnames[x])
+
+out_list <- map(3:nrow(vals), ~ transform(vals, s = rep(c(1,0), times = c(.x, nrow(vals)-.x))))
+
+names(out_list) <- stringr::str_pad(1:length(out_list), width = 2, pad = "0")
+
+library(gganimate)
+p <- out_list %>% 
+  bind_rows(.id = "sim") %>%
+  ggplot(aes(x = x, y = y, width = 1, height = 1, fill = s, label = par)) + 
+  geom_tile(col = "black", lwd = 2) + 
+  geom_text(parse = TRUE) + 
+  guides(fill = FALSE) + 
+  theme_void() + 
+  transition_states(sim,  transition_length = 0, state_length = 1)
+
+animate(p, nframes = 15)  
+```
+
+In this simple animation, each column is a parameter and each row is an iteration of the model. 
+
+Gibbs sampling works by simplifying a multivariate problem into small steps and tackling each one. We consider that all the parameters are known except the one we are sampling right now. Then, we sample form the posterior distribution for that parameter. This sampling can be done by conjugate posteriors, as we did above. It can also be done with the Metropolis or Metropolis-Hastings algorithm, or even with a combination of the two!
+
+The steps for this algorithm are similar to the previous ones:
+
+1. Start with random values for each parameter.
+1. assuming that all are correct except the first, sample a value for the first.
+1. Assuming that sample was correct for the first, sample the second. 
 
 ### Gibbs demo with the Normal Distribution
 
