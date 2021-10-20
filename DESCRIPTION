@@ -21,6 +21,7 @@ Imports:
     tidyverse,
     ggdag,
     palmerpenguins,
-    extraDistr
+    extraDistr,
+    gganimate
 Remotes:  
     gadenbuie/xaringanExtra
