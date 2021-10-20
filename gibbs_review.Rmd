@@ -60,7 +60,848 @@ This workshop is about some of them.
 * **Metropolis-in-Gibbs** -- is a Deluxe Combo of the previous two. 
 * **HMC etc** -- Hamiltonian Monte Carlo is an advanced modern way of doing the same thing. Sets you free to use the priors that work for your question, not the ones that work for your math.
 
-## Conjugate prior review
+# MCMC in general
+
+The objective of MCMC algorithm is to simulate parameters from a complex posterior distribution.
+
+Rather than measure the *absolute* probability of different parameter values:
+
+$$
+[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
+$$
+
+we sample, and evaluate the *relative* probability of two possible parameter values:
+
+$$
+\frac{[\theta^{new}|y]}{[\theta^k|y]} = \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}
+$$
+
+In this way, we can sample a probability distribution ( $[\theta|y]$ ) using only something _proportional_ to that distribution ( $[y|\theta][\theta]$ ) 
+
+## The Metropolis Algorithm
+
+**STEP 1** Draw $\theta^{new}$ from a _symmetric_ distribution centered on $\theta^{k}$ (i.e. in the $k$th interation, the current value)
+e.g. $\theta^{new} \sim N(\theta^{k}, \sigma_{tune})$
+
+**STEP 2** Calculate the ratio R:
+
+$$
+R = \text{min}\left( 1, \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}\right)
+$$
+
+This is the probability of acceptance. In other words, if the ratio is greater than one, that means the proposal is for a more probable value. We'll always take it. 
+If the ratio is less than 1, that means the new proposal is less probable than the value we have already. However, there's a chance we'll take it anyway.
+
+Test to see if `runif(1, min=0, max=1)` $< R$. if so, set $\theta^{k + 1} = \theta^{new}$
+
+<div class = "blue"> 
+Why should we accept "worse" parameter values? Why is it good to sometimes stay in the same place? 
+</div>
+
+### Metropolis demo: the mean of the Normal Distribution
+
+```{r}
+set.seed(1859)
+M_true_mean <- 50
+weights <- rnorm(300, mean = M_true_mean, sd = 3)
+
+head(weights)
+```
+  
+  
+model is something like
+  
+$$
+\begin{align}
+y &\sim \text{Normal}(\mu, 3) \\
+\mu &\sim \text{Normal(40, 10)}
+\end{align}
+$$
+  
+We **assume we KNOW the standard deviation**. In this case, it is exactly 3. 
+This is just for illustration.  Later we will see what to do if you have multiple parameters
+  
+
+```{r}
+
+## define likelihoods for our problem
+MEAN_normal_loglike <- function(data_vec, mean_value){
+  sum(dnorm(data_vec, mean = mean_value, sd = 3, log = TRUE))
+}
+
+# proposal function to make new parameter values.
+propose_new_val <- function(old_value, tune) {
+  runif(1, min = old_value - tune, max = old_value + tune)
+}
+
+## function to use these to calculate the value of the numerator in Bayes Formula
+## We are working on the LOG scale, so we have to ADD these together
+numerator <- function(value, data)  {
+  # likelihood
+  log_like <- MEAN_normal_loglike(data_vec = data, mean_value = value)
+  # prior
+  log_prior <- dnorm(x = value, mean = 40, sd = 10, log = TRUE)
+  
+  return(log_like + log_prior)
+}
+
+## function to calculate the acceptance ratio
+M_accept_probability <- function(new_value, 
+                               old_value, 
+                               data_to_use) {
+  
+  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
+  new <- numerator(value = new_value, data = data_to_use)
+  old <- numerator(value = old_value, data = data_to_use)
+  
+  difference_log_scale <- new - old
+  
+  # use EXP to undo the LOG
+  r <- exp(difference_log_scale)
+  
+  p_accept <- min(1, r)
+  
+  return(p_accept)
+}
+
+
+```
+
+
+```{r}
+# set tune parameter
+tune_parameter <- 2
+# how long should the chain be? 
+n_samples <- 5000
+
+#start chain
+chain <- numeric(n_samples)
+
+# start value
+chain[1] <- 30
+
+for (i in 2:length(chain)) {
+  
+  old_val <- chain[i - 1]
+  
+  new_val <- propose_new_val(old_value = old_val, tune = tune_parameter)
+  
+  p_accept <- M_accept_probability(new_value = new_val,
+                                 old_value = old_val, 
+                                 data_to_use = weights)
+  
+  chain[i] <- ifelse(runif(1) < p_accept, new_val, old_val)
+}
+
+```
+
+```{r}
+plot(chain)
+```
+
+This shows the long road that our sampler takes to get from the starting value to the true mean. 
+For this reason, typically we drop the beginning of the chain. 
+This is called the "burn in" period  
+
+```{r}
+plot(chain[100:n_samples], type = "l")
+```
+
+This shows the "fuzzy caterpillar" shape of a good, healthy Markov Chain.
+
+```{r}
+hist(chain[100:n_samples])
+abline(v = M_true_mean, col = "green", lwd = 5)
+```
+
+The green line shows the true average, which is close to the real value! 
+
+
+### The weakness of Metropolis
+
+Metropolis sampling will work, but sometimes we use MUCH more computer power than we need.
+Let's see how many proposals are rejected in our sampling.
+
+```{r fig.cap="Rejection in the Metropolis algorithm. here values of 0 mean that the sampler kept the same value. "}
+rejects <- zapsmall(chain[2:length(chain)] - chain[1:(length(chain) - 1)] )
+# 
+plot(rejects)
+# 
+n_rejects <- sum(rejects == 0)  / length(chain)
+```
+
+We rejected `r n_rejects*100`% of the values we tried. 
+That's not very efficient! Soon we'll see a more efficient way to do this. 
+
+## Metropolis-Hastings Algorithm -- asymmetrical jumps
+
+See the [slides on this part here](https://bios2.github.io/biodiversity_modelling_2021/slides/12_Bayes#49)
+
+The same, but we can use an asymmetrical proposal distribution.  This means that we can jump in either direction, but one direction is more likely
+
+We need this, because sometimes our parameters are bounded! For example, the standard deviation of a normal distribution can never be negative. 
+
+Because our jumps are no longer symmetrical, we need to add a small correction factor 
+
+
+Sometimes you need an _asymmetrical_ distribution for your parameter. This happens when the parameter is bounded. 
+
+In this case, we need to adjust our calculation of the probability of acceptance. Now in addition to the Likelihood and Prior, we have the Candidate distribution getting involved
+
+$$
+\frac{[y|\theta^{new}][\theta^{new}][\theta^{old}|\theta^{new}]}
+{[y|\theta^{old}][\theta^{old}][\theta^{old}|\theta^{new}]}
+$$ 
+
+Here's the same expression, but with more words substituted as a guide:
+
+$$
+r = \frac{\text{Likelihood}(\text{data}|\theta^{new}) \times \text{Prior}(\theta^{new}, \alpha, \beta) \times \text{Candidate}(\theta^{old}, \mu = \theta^{new}, \sigma_{tune})}{\text{Likelihood}(\text{data}|\theta^{old}) \times \text{Prior}(\theta^{old}, \alpha, \beta)\times \text{Candidate}(\theta^{new}, \mu = \theta^{old}, \sigma_{tune})}
+$$
+
+then finally:   
+
+$$
+R = \text{min}( 1, r)
+$$
+
+  
+Let's go (back) to our normal example and try this out.
+
+**We have to assume we KNOW the mean**. Later we'll see examples of what to do if you want to find two or more numbers at once! 
+
+Our model will be:  
+ 
+$$
+\begin{align}
+y &\sim \text{Normal}(50, \sigma) \\
+\sigma &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+  
+Why this weird notation for the gamma distribution?  
+Here I'm using a classic trick called moment matching. 
+We do this because for almost all distributions with two parameters, the mean and standard deviation each depend on both parameters. 
+This means that each parameter is also a function of both the mean and the standard deviation. 
+That means we can't directly set the mean and variance of a distribution with one parameter each.  
+
+<aside>except for the Normal distribution. The Normal is a beautiful weirdo which is why we love it!</aside>
+  
+Instead, we "reparameterize" the distribution, which just means we use values that correspond to the average and the standard deviation (or something like it). This is really helpful when you're using these distributions for ecology! 
+
+for mean $\mu$ and standard devation $\sigma$, the Gamma distribution parameters are:  
+
+$$
+\text{Gamma}\left(\frac{\mu^2}{\sigma^2}, \frac{\mu}{\sigma^2}\right)
+$$
+
+here's a quick demo to convince you:  
+
+```{r}
+rand_gammas <- rgamma(500, shape = 4^2/3^2, rate = 4/3^2)
+hist(rand_gammas)
+mean(rand_gammas) # close to 4
+sd(rand_gammas) # close to 3
+```
+
+### Proposal distribution
+
+We also need a distribution for the _proposals_ we will try in the algorithm. 
+This distribution should be above 0, since we can't have a 0 variance. 
+The lognormal is a good choice (and is hopefully clear since it is not the same distribution as the gamma)
+
+What does $\text{lognormal}(2, 0.2)$ look like?
+
+```{r}
+hist(rlnorm(500, 2, .2))
+```
+
+### Code for Metropolis Hastings
+Let's do Metropolis Hastings. We begin as before, with an expression for the numerator of Bayes Rule:
+
+```{r}
+
+## define likelihoods for our problem
+MH_normal_loglike <- function(data_vec, sd_value){
+  sum(dnorm(data_vec, mean = 50, sd = sd_value, log = TRUE))
+}
+
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+## NOTE that the mean gets logged as it goes into rlnorm and dlnorm!! 
+## This is a very necessary detail 
+## read the help files (?rlnorm) to find out what the R functions expect
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+
+# proposal function to make new parameter values.
+MH_propose_new_val <- function(old_value, sig_tune) {
+  rlnorm(1, mean = log(old_value), sd = sig_tune)
+}
+
+MH_propose_density <- function(jump_to, jump_from, sig_tune) {
+  dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
+}
+
+
+
+
+## function to use these to calculate the value of the numerator in Bayes Formula
+## We are working on the LOG scale, so we have to ADD these together
+MH_numerator <- function(v, data)  {
+  # likelihood
+  log_like <- MH_normal_loglike(data_vec = data, sd_value = v)
+  # prior
+  log_prior <- dgamma(x = v, shape = 4^2/3^2, rate = 4/3^2, log = TRUE)
+  
+  return(log_like + log_prior)
+}
+
+## function to calculate the acceptance ratio
+MH_accept_probability <- function(new_value, old_value, 
+                               data_to_use, 
+                               tune_parameter) {
+  
+  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
+  new <- MH_numerator(v = new_value, data = data_to_use)
+  old <- MH_numerator(v = old_value, data = data_to_use)
+  
+  difference_log_scale <- new - old
+  
+  # use EXP to undo the LOG
+  r <- exp(difference_log_scale)
+  
+  # calculate the correction -- asymmetrical proposal
+  new_from_old <- MH_propose_density(jump_to = new_value,
+                                  jump_from = old_value,
+                                  sig_tune = tune_parameter)
+  
+  old_from_new <- MH_propose_density(jump_to = old_value,
+                                  jump_from = new_value,
+                                  sig_tune = tune_parameter)
+  
+  R <- r * (old_from_new / new_from_old)
+  
+  p_accept <- min(1, R)
+  
+  return(p_accept)
+}
+```
+
+The proposal distribution, centered on a value (e.g. 9) should be the same as the proposal density, centered on the same value.  
+
+```{r}
+
+replicate(3000, MH_propose_new_val(9, 0.1)) %>% hist(probability = TRUE)
+curve(MH_propose_density(jump_to = x, jump_from = 9, sig_tune = 0.1), xlim = c(5,14), add = TRUE)
+
+```
+
+
+```{r }
+# fake some data
+set.seed(1859)
+correct_sd <- 3
+weights <- rnorm(1000, mean = 50, sd = correct_sd)
+
+# set tune parameter
+tune_parameter <- .2
+# how long should the chain be? 
+n_samples <- 5000
+
+#start chain
+chain <- numeric(n_samples)
+
+# start value
+chain[1] <- 7
+
+for (i in 2:length(chain)) {
+  
+  old_val <- chain[i - 1]
+  
+  new_val <- MH_propose_new_val(old_value = old_val, sig_tune = tune_parameter)
+  
+  p_accept <- MH_accept_probability(new_value = new_val,
+                                 old_value = old_val, 
+                                 data_to_use = weights,
+                                 tune_parameter = tune_parameter)
+  
+  chain[i] <- ifelse(runif(1) < p_accept, new_val, old_val)
+}
+
+
+
+plot(chain[300:n_samples], type = "l")
+```
+
+```{r}
+
+plot(density(chain[300:n_samples]))
+abline(v = correct_sd)
+```
+
+```{r}
+median(chain[300:n_samples])
+mean(chain[300:n_samples])
+```
+
+Close to the true value of `correct_sd` which is `r correct_sd`.
+
+<div class = "blue">
+PSA: I made **MANY** errors while I was writing the above. If I had not started with simulated data, I would never have known!! Each time, I compared my answer to `correct_sd` and then went looking for the errors. Please remember to always do this, especially when you are coding an algorithm yourself! 
+</div>
+
+
+<div>
+
+Experiment with changing the proposal distribution! try for example gamma distribution:
+
+```r
+MH_propose_new_val <- function(old_value, sig_tune) {
+  rgamma(1, shape = old_value^2/sig_tune^2, rate = old_value/sig_tune^2)
+}
+
+MH_propose_density <- function(jump_to, jump_from, sig_tune) {
+  dgamma(x = jump_to, shape = jump_from^2/sig_tune^2, rate = jump_from/sig_tune^2)
+}
+```
+
+</div>
+
+## One Weird Trick to make calculating the posterior easy
+
+### Mean of a Normal Distribution
+
+
+### Variance of the Normal Distribution
+
+First we need to do a little math tweak to the model:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(50, \sigma) \\
+\frac{1}{\sigma^2} &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+
+Now instead of setting the prior on $\sigma$ directly, we set the prior on the _inverse square_ of sigma! <aside>Why do we do the inverse square? Well, the square of the standard deviation is the variance. As we know, the larger the variance, the wider the distribution. The inverse variance has the opposite interpretation: the larger it is, the more narrow and focussed the distribution! This is called the "precision", and it is another common way to think about the Normal Distribution.</aside> 
+
+We can think of this as a kind of link function. Doing a bit of algebra, we can see that:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(50, g^{-1/2}) \\
+g &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
+\end{align}
+$$
+
+I admit that this makes setting reasonable priors awkward, so let's go back to plotting:
+
+```{r}
+gs <- rgamma(5000, 3.5^2/3^2, 3.5/3^2)
+
+plot(density(gs^-.5))
+```
+
+if the mean is known, then the posterior distribution for the variance is an inverse gamma:
+
+$$
+\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
+\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
+$$
+
+```{r}
+curve(dgamma(x, 3.5^2/3^2 + length(weights)/2, 3.5/3^2 + sum((weights - 50)^2)/2))
+```
+
+```{r}
+precision_values <- seq(0.09, .15, length.out = 3000)
+post_density <- dgamma(precision_values, 2^2/50^2 + length(weights)/2, 2/5^2 + sum((weights - 50)^2)/2)
+
+plot(x = precision_values^-.5, y = post_density)
+
+(precision_values^-.5)[which.max(post_density)]
+abline(v = correct_sd)
+```
+
+Compare to the Metropolis-Hastings approach
+
+```{r}
+plot(x = precision_values^-.5, y = post_density, xlim = c(2.7, 3.4))
+hist(chain[300:n_samples], probability = TRUE, add= TRUE)
+# lines(density(chain[300:n_samples]))
+```
+
+
+```{r}
+tibble(v = chain[300:n_samples]) %>% 
+  ggplot(aes(x = v)) + 
+  geom_histogram(aes(y = ..density..),
+                 binwidth = .01, fill = "grey", color = "black") + 
+  geom_line(aes(x = sigma, y = density), data.frame(sigma = precision_values^-.5, 
+                                                     density = post_density*6/80))
+```
+
+
+```{r}
+tibble(v = chain[300:n_samples]) %>% 
+  ggplot(aes(x = v)) + 
+  geom_histogram(aes(y = ..density..),
+                 binwidth = .01, fill = "grey", color = "black") + 
+  geom_line(aes(x = sigma, y = density), 
+            data = tibble(sigma = seq(from = 2.6, to = 3.3, length.out = n_samples - 300), 
+                              density = dgamma(sigma^(-2),
+                                               shape = 2^2/5^2 + length(weights)/2,
+                                               rate = 2/5^2 + sum((weights - 50)^2)/2)))
+```
+
+
+Calculate the posterior average
+
+```{r}
+
+set.seed(1859)
+correct_sd <- 7
+weights <- rnorm(1000, mean = 50, sd = correct_sd)
+
+prec_mean <- (.02^2/5^2 + length(weights)/2)/(.02/5^2 + sum((weights - 50)^2)/2)
+prec_mean^-.5
+```
+
+
+
+
+## Gibbs sampling
+
+<div style="width:100%;height:0;padding-bottom:61%;position:relative;"><iframe src="https://giphy.com/embed/3oEhmHmWP3Y9wQxoli" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/funny-lol-cartoon-3oEhmHmWP3Y9wQxoli">via GIPHY</a></p>
+
+Sample each parameter, keeping the others fixed. Let's consider just two for now:
+
+Start with random values for each parameter
+
+assuming that all are correct except the first, sample a value for the first
+
+Assuming that sample was correct for the first, what is the second? 
+
+### Gibbs demo with the Normal Distribution
+
+Let's begin by simulating some values from a normal distribution:
+
+```{r}
+true_mean <- 31
+true_sd <-  4
+sample_size <- 30
+set.seed(1859)
+mass_values <- rnorm(n = sample_size, mean = true_mean, sd = true_sd)
+
+hist(mass_values)
+```
+
+We define a model for these data. 
+We do this in a very deliberate way, choosing the priors to be conjugates:
+
+$$
+\begin{align}
+y &\sim \text{Normal}(\mu, \sigma) \\
+\mu &\sim \text{Normal}(10,5) \\
+\frac{1}{\sigma^2} &\sim \text{Gamma}(4.1^2/2^2, 4.1/2^2)
+\end{align}
+$$
+
+Why did I choose the mean of 4.5 for the gamma distribution? 
+What is a gamma distribution anyway, and what does this strange link function mean? 
+
+As usual, simulation is a great way to understand and practice. 
+
+Let's start by simulating values with a mean of 
+
+```{r}
+
+rg <- rgamma(1000, shape = 4.1^2/2^2, rate = 4.1/2^2)
+mean(rg)
+sd(rg)
+
+curve(dgamma(x, shape = 3^2/2^2, rate = 3/2^2), xlim = c(0, 5))
+
+plot(density(1/rg^.5))
+```
+
+if the variance is known, the posterior for the mean is a normal distribution:
+
+$$
+\mu' \sim \text{Normal}\left(\frac{\frac{10}{5}+ \frac{\sum{y}}{\sigma^2}}{\frac{1}{5^2} + \frac{n}{\sigma^2}}, \left(\frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
+$$
+
+Note that $10$ is the prior mean and $5$ is the prior variance for $\mu$, the mean of the distribution.
+
+if the mean is known, then the posterior distribution for the variance is an inverse gamma:
+
+$$
+\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
+\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
+$$
+
+### Defining and running a Gibbs Sampler
+
+To implement this model we need to write functions that will do each of these things in turn.
+
+```{r}
+# calculate the posterior normal distribution for the data and a known variance
+
+post_mean <- function(y_vector, known_sigma,
+                      prior_mean, prior_sd,
+                      n = length(y_vector)){
+  numerator_mean <- (prior_mean/prior_sd^2 + sum(y_vector) / known_sigma^2)
+  denominator_mean <- (1 / prior_sd^2 + n / known_sigma^2)
+  
+  new_mean <-  numerator_mean / denominator_mean
+    
+  new_var <- 1/denominator_mean
+  
+  rnorm(1, mean = new_mean, sd = sqrt(new_var))
+}
+
+# fun to play with this! make sure it makes sense! 
+post_mean(y_vector = c(2,4,1,5), .1, 7, 2)
+
+```
+
+```{r}
+post_sd <- function(y_vector, known_mean, prior_alpha, prior_beta){
+  
+  new_alpha <- prior_alpha + length(y_vector) / 2
+  
+  new_beta <- prior_beta + sum((y_vector - known_mean)^2) / 2
+  
+  inverse_variance <- rgamma(n = 1, shape = new_alpha, rate = new_beta)
+  
+  sd_sample <- sqrt(1/inverse_variance)
+  return(sd_sample)
+}
+
+post_sd(c(2,4,1,5), known_mean = 3, prior_alpha = 2^2/2^2, prior_beta = 2/2^2)
+
+sd(c(2,4,1,5))
+```
+
+```{r}
+true_mean <- 24
+true_sd <- 7
+
+y_data <- rnorm(400, mean = true_mean, sd = true_sd)
+
+# gibbs process
+n_iterations <- 2000
+mean_chain <- numeric(n_iterations)
+sd_chain <- numeric(n_iterations)
+
+
+# sample to start -- could be anything, might as well be priors
+mean_chain[1] <- rnorm(1, mean = 10, sd = 5)
+sd_chain[1] <- rgamma(1, shape = 3^2/2^2, rate = 3/2^2)
+
+for (k in 2:n_iterations) {
+  # draw a mean
+  mean_chain[k] <- post_mean(y_vector = y_data,
+                             known_sigma = sd_chain[k - 1],
+                             prior_mean = 10,
+                             prior_sd = 5)
+  sd_chain[k] <- post_sd(y_vector = y_data, 
+                         known_mean = mean_chain[k],
+                         prior_alpha = 3^2/2^2,
+                         prior_beta = 3/2^2)
+}
+
+par(mfrow = c(1,2))
+plot(mean_chain)
+abline(h = true_mean, col = "red", lwd = 2)
+plot(sd_chain)
+abline(h = true_sd, col = "red", lwd = 2)
+par(mfrow = c(1,1))
+```
+
+You can see that the chains are almost exactly what we want.
+
+```{r}
+curve(dnorm(x, mean = true_mean, sd = true_sd),
+      xlim = c(true_mean - 4 * true_sd,
+               true_mean + 4 * true_sd), 
+      lwd = 8, col = "red", ylim = c(0, 0.07))
+
+for (i in (n_iterations-10):n_iterations) {
+  curve(dnorm(x, mean = mean_chain[i], sd = sd_chain[i]), add = TRUE, lty = 2)
+}
+```
+
+Are the posterior medians close to the real values?
+
+```{r}
+median(mean_chain[100:n_iterations])
+true_mean
+
+median(sd_chain[100:n_iterations])
+true_sd
+```
+
+Play with these values and see if you can break this algorithm.
+
+We can also look at the pairs plot, like this
+
+```{r}
+plot(mean_chain[100:n_iterations], sd_chain[100:n_iterations])
+```
+
+This reveals if there are any correlations in the posterior. 
+
+## Metropolis-in-Gibbs
+
+Sometimes we need a Deluxe option -- running a Metropolis Hastings sampler inside a Gibbs sampler
+
+Let's look at an example where that is necessary
+
+$$
+\begin{align}
+y &\sim \text{LogNormal}(\text{log}) \\
+\end{align}
+$$
+
+```{r}
+
+truemean <- 15
+truesd <- 3
+
+
+ff <- rlnorm(2000,
+             meanlog = log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2), 
+             sdlog = log((truemean^2 + truesd^2)/truemean^2)^.5)
+
+mean(ff)
+
+sd(ff)
+
+hist(ff)
+```
+
+conjugacy and the lognormal
+
+```{r}
+# mean 2 sd = 3
+curve(dnorm(x, 
+            mean = (2/20^2 + sum(log(ff))/truesd^2)/(1/20^2 + length(ff)/truesd^2),
+            sd = (1/20^2 + length(ff)/truesd^2)^-1),
+      xlim = c(1, 10)
+)
+abline(v = log(truemean))
+```
+
+```{r}
+curve(dgamma(x, 
+             shape = 3 + length(ff)/2,
+             rate = 4 + sum( (log(ff) - truemean )^2) / 2), xlim = c(0,.01))
+
+(1/truesd^2)
+
+
+```
+
+```{r}
+
+ml <- log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2)
+
+curve(dgamma(x, 
+             shape = 3 + length(ff)/2,
+             rate = 4 + sum( (log(ff) - ml )^2) / 2), xlim = c(0,40))
+
+abline(v = 1/log((truemean^2 + truesd^2)/truemean^2))
+
+
+```
+
+
+```{r}
+# mean 2 sd = 3
+
+truemean <- 20
+truesd <- 9
+meanlog = log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2)
+sdlog = log((truemean^2 + truesd^2)/truemean^2)^.5
+
+#this sdlog thing is so weird!
+curve(log((truemean^2 + x^2)/truemean^2)^.5, xlim = c(0,200))
+
+
+ff <- rlnorm(300,
+             meanlog = meanlog, 
+             sdlog = sdlog)
+
+hist(ff, probability = TRUE)
+
+sd(ff)
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 ,
+                            beta = 4),
+      xlim = c(0,5), ylim = c(0,1))
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(ff)/2,
+                            beta = 4 + sum( (log(ff) - meanlog)^2 ) / 2),
+      add = TRUE
+)
+abline(v = sdlog^2)
+
+```
+
+
+
+```{r}
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3,
+                            beta = 4), xlim = c(0, 3))
+abline(v = truesd^2)
+```
+
+
+
+
+```{r}
+curve(4 * x ^ (.2), xlim = c(1,300))
+```
+
+* some kind of decerating power curve
+* one of the parameters is probably less than 1 but not less than 0
+
+```{r}
+true_sd <- 4
+true_value_at_one <-  2
+true_exponent <- .5
+library(tibble)
+
+energy_mass <- tibble(
+  masses = runif(n = 200, min = 2, max = 320),
+  avg_energy = true_value_at_one*masses^true_exponent,
+  energies = rlnorm(200,
+                    meanlog = log(avg_energy) - .5*log((avg_energy^2 + true_sd^2)/avg_energy^2), 
+                    sdlog = log((avg_energy^2 + true_sd^2)/avg_energy^2)^.5))
+
+library(ggplot2)
+
+energy_mass %>% 
+  ggplot(aes(x = masses, y = energies)) + geom_point()
+```
+
+```{r}
+
+```
+
+
+
+
+# Bonus Zone
+
+
+## Conjugate priors, Metropolis-Hastings, and Penguins
+
+
+### Proof of Beta & Binomial conjugate pair
 
 
 $$
@@ -87,36 +928,46 @@ So the posterior distribution is a Beta distribution, just like the prior was! W
 
 This also gives us an easy interpretation of what the parameters of any Beta distribution are: $\alpha$ is something like the number of successes, and $\beta$ is something like the number of failures^[Not EXACTLY successes and failures because $\alpha$ and $\beta$ can be decimal numbers (e.g. "1.5") and obviously real successes and failures can't be. You can think of these as "pseudosuccesses" and "pseudofailures" or, as I prefer, "successosity" and "failishness" ].
 
-## Application: Clutch success in the Palmer Penguins
 
-```{r}
-pr <- read.csv(path_to_file("penguins_raw.csv"))
-penguins_raw %>% 
-  count(Species, `Clutch Completion`) %>% 
-  pivot_wider(names_from = `Clutch Completion`, values_from = n) %>% 
-  knitr::kable(.)
-```
-
-With this, we can calculate the posterior probability of clutch success for each penguin species. 
+Suppose we had written the model like this:
 
 $$
 \begin{align}
-n_{\text{succeeded}} &\sim \text{Binomial}(p_{\text{success}}, n_{\text{nesting}})\\
-p_{\text{success}} &\sim \text{Beta}(7,3)\\
+y &\sim \text{Binomial}(p, N) \\
+\text{logit}(p)  &= \alpha\\ 
+\alpha &\sim \text{Normal}(1, 1)
 \end{align}
 $$
 
+Remember that the binomial distribution is written as:
+
+$$
+{n \choose k} p^k (1-p)^{n-k}
+$$
+
+the two lines in equation 1 are just a shorthand for saying "replace $p$ with the inverse logit of $\alpha$". 
+We could also write it this way, literally replacing $p$ with that function
+
+$$
+\begin{align}
+y &\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1-\frac{e^\alpha}{1 + e^\alpha}\right)^{n-k} \\
+\alpha &\sim \text{Normal}(1, 1)
+\end{align}
+$$
+
+Another quick reminder, remember that the logistic function is a traditional way of squishing any real number into the interval $(0,1)$:
+
+$$
+\frac{e^x}{1 + e^x}
+$$
+
 ```{r}
-curve(dbeta(x, 7, 3), ylim = c(0, 17))
-curve(dbeta(x, 138 + 7, 14 + 3), add = TRUE, lty = 2)
-curve(dbeta(x, 54 + 7, 14 + 3), add = TRUE, lty = 3)
-curve(dbeta(x, 116 + 7, 8 + 3), add = TRUE, lty = 4)
-legend(0,17, legend = c("prior", "Adelie", "Chinstrap", "Gentoo"), lty = 1:4)
+curve(exp(x)/(1 + exp(x)),
+      xlim = c(-4, 4), ylim = c(0, 1))
 ```
 
 
 
-## Seed survival part I 
 
 Let's imagine an experiment where we place exactly 42 seeds in experimental plots. We use 30 experimental plots.
 
@@ -182,80 +1033,6 @@ abline(v = true_prob)
 abline(v =(2 + lived)/(2 + lived + 5 + died), col = "red")
 ```
 
-But what if we *didn't* want to do this?
-
-# MCMC in general
-
-The objective of MCMC algorithm is to simulate parameters from a complex posterior distribution.
-
-Rather than measure the *absolute* probability of different parameter values:
-
-$$
-[\theta|y] = \frac{[y|\theta][\theta]}{[y]}
-$$
-
-we sample, and evaluate the *relative* probability of two possible parameter values:
-
-$$
-\frac{[\theta^{new}|y]}{[\theta^k|y]} = \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}
-$$
-
-In this way, we can sample a probability distribution ( $[\theta|y]$ ) using only something _proportional_ to that distribution ( $[y|\theta][\theta]$ ) 
-
-## The Metropolis Algorithm
-
-* Draw $\theta^{new}$ from a _symmetric_ distribution centered on $\theta^{k}$ (i.e. in the $k$th interation, the current value)
-e.g. $\theta^{new} \sim N(\theta^{k}, \sigma_{tune})$
-* Calculate the ratio R:
-
-$$
-R = \text{min}\left( 1, \frac{[y|\theta^{new}][\theta^{new}]}{[y|\theta^k][\theta^k]}\right)
-$$
-
-This is the probability of acceptance. In other words, if the ratio is greater than one, that means the proposal is for a more probable value. We'll always take it. 
-If the ratio is less than 1, that means the new proposal is less probable than the value we have already. However, there's a chance we'll take it anyway.
-
-* Test to see if `runif(1, min=0, max=1)` $< R$. if so, set $\theta^{k + 1} = \theta^{new}$
-
-* **Discussion question**: why should we accept "worse" parameter values? Why is it good to sometimes stay in the same place? 
-
-
-Suppose we had written the model like this:
-
-$$
-\begin{align}
-y &\sim \text{Binomial}(p, N) \\
-\text{logit}(p)  &= \alpha\\ 
-\alpha &\sim \text{Normal}(1, 1)
-\end{align}
-$$
-
-Remember that the binomial distribution is written as:
-
-$$
-{n \choose k} p^k (1-p)^{n-k}
-$$
-
-the two lines in equation 1 are just a shorthand for saying "replace $p$ with the inverse logit of $\alpha$". 
-We could also write it this way, literally replacing $p$ with that function
-
-$$
-\begin{align}
-y &\sim {n \choose k} \left(\frac{e^\alpha}{1 + e^\alpha} \right)^{k}\left(1-\frac{e^\alpha}{1 + e^\alpha}\right)^{n-k} \\
-\alpha &\sim \text{Normal}(1, 1)
-\end{align}
-$$
-
-Another quick reminder, remember that the logistic function is a traditional way of squishing any real number into the interval $(0,1)$:
-
-$$
-\frac{e^x}{1 + e^x}
-$$
-
-```{r}
-curve(exp(x)/(1 + exp(x)),
-      xlim = c(-4, 4), ylim = c(0, 1))
-```
 
 ### Sampling this model: the Metropolis algorithm
 
@@ -355,521 +1132,34 @@ curve(dbeta(x, 2 + lived, 5 + died), add = TRUE, lty = 2)
 ```
 
 
-### The weakness of Metropolis
-
-Metropolis sampling will work, but sometimes we use MUCH more computer power than we need.
-Let's see how many proposals are rejected in our sampling.
+### Application: Clutch success in the Palmer Penguins
 
 ```{r}
-rejects <- zapsmall(chain[2:length(chain)] - chain[1:(length(chain) - 1)] )
-
-plot(rejects)
-
-sum(rejects == 0)  / length(chain)
+pr <- read.csv(path_to_file("penguins_raw.csv"))
+penguins_raw %>% 
+  count(Species, `Clutch Completion`) %>% 
+  pivot_wider(names_from = `Clutch Completion`, values_from = n) %>% 
+  knitr::kable(.)
 ```
 
-lots of rejection of samples. That's not very efficient! 
-
-## Metropolis-Hastings Algorithm -- asymmetrical jumps
-
-See the [slides on this part here](https://bios2.github.io/biodiversity_modelling_2021/slides/12_Bayes#49)
-
-See [The slides on the topic]
-
-The same, but we can use an asymmetrical proposal distribution.  This means that we can jump in either direction, but one direction is more likely
-
-We need this, because sometimes our parameters are bounded! For example, the standard deviation of a normal distribution can never be negative. 
-
-Because our jumps are no longer symmetrical, we need to add a small correction factor 
-
-
-Sometimes you need an _asymmetrical_ distribution for your parameter. This happens when the parameter is bounded. 
-
-In this case, we need to adjust our calculation of $r$. Now in addition to the Likelihood and Prior, we have the Candidate distribution getting involved
-
-$$
-\frac{[y|\theta^{new}][\theta^{new}][\theta^{old}|\theta^{new}]}
-{[y|\theta^{old}][\theta^{old}][\theta^{old}|\theta^{new}]}
-$$ 
-
-Here's the same expression, but with more words substituted as a guide:
-
-.small[
-<p>
-$$
-r = \frac{\text{Likelihood}(\text{data}|\theta^{new}) \times \text{Prior}(\theta^{new}, \alpha, \beta) \times \text{Candidate}(\theta^{old}, \mu = \theta^{new}, \sigma_{tune})}{\text{Likelihood}(\text{data}|\theta^{old}) \times \text{Prior}(\theta^{old}, \alpha, \beta)\times \text{Candidate}(\theta^{new}, \mu = \theta^{old}, \sigma_{tune})}
-$$
-</p>
-]
-
-then finally 
-$$
-R = \text{min}( 1, r)
-$$
-
-
-Let's go (back) to our normal example and try this out.
-
-**We have to assume we KNOW the mean**. Later we'll see examples of what to do if you want to find two or more numbers at once! 
-
-```{r}
-
-weights <- rnorm(30, mean = 50, sd = 3)
-
-weights
-```
-
-Our model will be:
+With this, we can calculate the posterior probability of clutch success for each penguin species. 
 
 $$
 \begin{align}
-y &\sim \text{Normal}(50, \sigma) \\
-\sigma &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
-\end{align}
-$$
-
-Why this weird notation for the gamma distribution? 
-Here I'm using a classic trick called [Moment Matching](). 
-We do this because for almost all distributions with two parameters, the mean and standard deviation each depend on *BOTH* parameters. 
-This means that each parameter is also a function of *BOTH* the mean and the standard deviation. 
-That means we can't directly set the mean and variance of a distribution with one parameter each. <aside> except for the Normal distribution. The Normal is a beautiful weirdo which is why we love it </aside>.
-Instead, we "reparameterize" the distribution, which just means we use values that correspond to the average and the standard deviation (or something like it). This is really helpful when you're using these distributions for ecology! 
-
-for mean $\mu$ and standard devation $\sigma$, the Gamma distribution parameters are:
-
-$$
-\text{Gamma}\left(\frac{\mu^2}{\sigma^2}, \frac{\mu}{\sigma^2}\right)
-$$
-
-here's a quick demo to convince you:
-```{r}
-rand_gammas <- rgamma(500, shape = 4^2/3^2, rate = 4/3^2)
-hist(rand_gammas)
-mean(rand_gammas) # close to 4
-sd(rand_gammas) # close to 3
-```
-
-### Proposal distribution
-
-We also need a distribution for the _proposals_ we will try in the algorithm. 
-This distribution should be above 0, since we can't have a 0 variance. 
-The lognormal is a good choice (and is hopefully clear since it is not the same distribution as the gamma)
-
-What does $\text{lognormal}(2, 0.2)$ look like?
-
-```{r}
-hist(rlnorm(500, 2, .2))
-```
-
-### Code for Metropolis Hastings
-Let's do Metropolis Hastings. We begin as before, with an expression for the numerator of Bayes Rule:
-
-```{r}
-
-## define likelihoods for our problem
-normal_loglike <- function(data_vec, sd_value){
-  sum(dnorm(data_vec, mean = 50, sd = sd_value, log = TRUE))
-}
-
-gamma_loglike <- function(sd_value){
-  dgamma(sd_value, shape = 4^2/3^2, rate = 4/3^2, log = TRUE)
-}
-
-######## ~~~!!!!!!!!!!!!!~~~~~~#########
-## NOTE that the mean gets logged as it goes into rlnorm and dlnorm!! 
-## This is a very necessary detail 
-## read the help files (?rlnorm) to find out what the R functions expect
-######## ~~~!!!!!!!!!!!!!~~~~~~#########
-
-# proposal function to make new parameter values.
-propose_new_val <- function(old_value, sig_tune) {
-  rlnorm(1, mean = log(old_value), sd = sig_tune)
-}
-
-propose_density <- function(jump_to, jump_from, sig_tune) {
-  dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
-}
-
-## function to use these to calculate the value of the numerator in Bayes Formula
-## We are working on the LOG scale, so we have to ADD these together
-numerator <- function(v, data)  {
-  # likelihood
-  log_like <- normal_loglike(data_vec = data, sd_value = v)
-  # prior
-  log_prior <- gamma_loglike(sd_value = v)
-  
-  return(log_like + log_prior)
-}
-
-## function to calculate the acceptance ratio
-accept_probability <- function(new_value, old_value, 
-                               data_to_use, 
-                               tune_parameter) {
-  
-  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
-  new <- numerator(v = new_value, data = data_to_use)
-  old <- numerator(v = old_value, data = data_to_use)
-  
-  difference_log_scale <- new - old
-  
-  # use EXP to undo the LOG
-  r <- exp(difference_log_scale)
-  
-  # calculate the correction -- asymmetrical proposal
-  new_from_old <- propose_density(jump_to = new_value,
-                                  jump_from = old_value,
-                                  sig_tune = tune_parameter)
-  
-  old_from_new <- propose_density(jump_to = old_value,
-                                  jump_from = new_value,
-                                  sig_tune = tune_parameter)
-  
-  R <- r * (old_from_new / new_from_old)
-  
-  p_accept <- min(1, R)
-  
-  return(p_accept)
-}
-```
-
-The proposal distribution, centered on a value (e.g. 9) should be the same as the proposal density, centered on the same value.
-```{r}
-
-replicate(300, propose_new_val(9, 0.1)) %>% hist(probability = TRUE)
-curve(propose_density(jump_to = x, jump_from = 9, sig_tune = 0.1), xlim = c(5,14), add = TRUE)
-
-```
-
-
-```{r }
-# fake some data
-set.seed(1859)
-correct_sd <- 3
-weights <- rnorm(1000, mean = 50, sd = correct_sd)
-
-# set tune parameter
-tune_parameter <- .2
-# how long should the chain be? 
-n_samples <- 5000
-
-#start chain
-chain <- numeric(n_samples)
-
-# start value
-chain[1] <- 7
-
-for (i in 2:length(chain)) {
-  
-  old_val <- chain[i - 1]
-  
-  new_val <- propose_new_val(old_value = old_val, sig_tune = tune_parameter)
-  
-  p_accept <- accept_probability(new_value = new_val,
-                                 old_value = old_val, 
-                                 data_to_use = weights,
-                                 tune_parameter = tune_parameter)
-  
-  chain[i] <- ifelse(runif(1) < p_accept, new_val, old_val)
-}
-
-
-
-plot(chain[300:n_samples], type = "l")
-```
-
-```{r}
-
-plot(density(chain[300:n_samples]))
-abline(v = correct_sd)
-```
-
-```{r}
-median(chain[300:n_samples])
-mean(chain[300:n_samples])
-```
-
-Close to the true value of `correct_sd` which is `r correct_sd`.
-
-<div class = "blue">
-PSA: I made **MANY** errors while I was writing the above. If I had not started with simulated data, I would never have known!! Each time, I compared my answer to `correct_sd` and then went looking for the errors. Please remember to always do this, especially when you are coding an algorithm yourself! 
-</div>
-
-
-### One Weird Trick to make calculating the posterior easy
-
-First we need to do a little math tweak to the model:
-
-$$
-\begin{align}
-y &\sim \text{Normal}(50, \sigma) \\
-\frac{1}{\sigma^2} &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
-\end{align}
-$$
-
-Now instead of setting the prior on $\sigma$ directly, we set the prior on the _inverse square_ of sigma! <aside>Why do we do the inverse square? Well, the square of the standard deviation is the variance. As we know, the larger the variance, the wider the distribution. The inverse variance has the opposite interpretation: the larger it is, the more narrow and focussed the distribution! This is called the "precision", and it is another common way to think about the Normal Distribution.</aside> 
-
-We can think of this as a kind of link function. Doing a bit of algebra, we can see that:
-
-$$
-\begin{align}
-y &\sim \text{Normal}(50, g^{-1/2}) \\
-g &\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
-\end{align}
-$$
-
-I admit that this makes setting reasonable priors awkward, so let's go back to plotting:
-
-```{r}
-gs <- rgamma(5000, 3.5^2/3^2, 3.5/3^2)
-
-plot(density(gs^-.5))
-```
-
-if the mean is known, then the posterior distribution for the variance is an inverse gamma:
-
-$$
-\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
-\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
-$$
-
-```{r}
-curve(dgamma(x, 3.5^2/3^2 + length(weights)/2, 3.5/3^2 + sum((weights - 50)^2)/2))
-```
-
-```{r}
-precision_values <- seq(0.09, .15, length.out = 3000)
-post_density <- dgamma(precision_values, 2^2/50^2 + length(weights)/2, 2/5^2 + sum((weights - 50)^2)/2)
-
-plot(x = precision_values^-.5, y = post_density)
-
-(precision_values^-.5)[which.max(post_density)]
-abline(v = correct_sd)
-```
-
-Compare to the Metropolis-Hastings approach
-
-```{r}
-plot(x = precision_values^-.5, y = post_density, xlim = c(2.7, 3.4))
-hist(chain[300:n_samples], probability = TRUE, add= TRUE)
-lines(density(chain[300:n_samples]))
-```
-
-
-
-
-```{r}
-data_frame(v = chain[300:n_samples]) %>% 
-  ggplot(aes(x = v)) + 
-  geom_histogram(aes(y = ..density..),
-                 binwidth = .01, fill = "grey", color = "black") + 
-  geom_line(aes(x = sigma, y = density), data.frame(sigma = precision_values^-.5, 
-                                                     density = post_density*6/80))
-```
-
-
-```{r}
-data_frame(v = chain[300:n_samples]) %>% 
-  ggplot(aes(x = v)) + 
-  geom_histogram(aes(y = ..density..),
-                 binwidth = .01, fill = "grey", color = "black") + 
-  geom_line(aes(x = sigma, y = density), 
-            data = data_frame(sigma = seq(from = 2.6, to = 3.3, length.out = n_samples - 300), 
-                              density = dgamma(sigma^(-2),
-                                               shape = 2^2/5^2 + length(weights)/2,
-                                               rate = 2/5^2 + sum((weights - 50)^2)/2)))
-```
-
-
-Calculate the posterior average
-
-```{r}
-
-set.seed(1859)
-correct_sd <- 7
-weights <- rnorm(1000, mean = 50, sd = correct_sd)
-
-prec_mean <- (.02^2/5^2 + length(weights)/2)/(.02/5^2 + sum((weights - 50)^2)/2)
-prec_mean^-.5
-```
-
-
-
-```{r}
-pp <- replicate(200, {
-weights <- rnorm(1e5, mean = 50, sd = correct_sd)
-
-prec_mean <- (.02^2/5^2 + length(weights)/2)/(.02/5^2 + sum((weights - 50)^2)/2)
-prec_mean^-.5})
-
-plot(density(pp))
-```
-
-
-## Gibbs sampling
-
-<div style="width:100%;height:0;padding-bottom:61%;position:relative;"><iframe src="https://giphy.com/embed/3oEhmHmWP3Y9wQxoli" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/funny-lol-cartoon-3oEhmHmWP3Y9wQxoli">via GIPHY</a></p>
-
-Sample each parameter, keeping the others fixed. Let's consider just two for now:
-
-Start with random values for each parameter
-
-assuming that all are correct except the first, sample a value for the first
-
-Assuming that sample was correct for the first, what is the second? 
-
-
-```{r}
-true_mean <- 31
-true_sd <-  4
-set.seed(1859)
-mass_values <- rnorm(30, mean = true_mean, sd = true_sd)
-```
-
-define the model, but in a deliberate way, choosing the priors to be conjugates
-
-$$
-\begin{align}
-y &\sim \text{Normal}(\mu, \sigma) \\
-\mu &\sim \text{Normal}(10,5) \\
-\frac{1}{\sigma^2} &\sim \text{Gamma}(3^2/2^2, 3/2^2)
+n_{\text{succeeded}} &\sim \text{Binomial}(p_{\text{success}}, n_{\text{nesting}})\\
+p_{\text{success}} &\sim \text{Beta}(7,3)\\
 \end{align}
 $$
 
 ```{r}
-
-rg <- rgamma(1000, shape = 3^2/2^2, rate = 3/2^2)
-mean(rg)
-sd(rg)
-
-curve(dgamma(x, shape = 3^2/2^2, rate = 3/2^2), xlim = c(0, 5))
+curve(dbeta(x, 7, 3), ylim = c(0, 17))
+curve(dbeta(x, 138 + 7, 14 + 3), add = TRUE, lty = 2)
+curve(dbeta(x, 54 + 7, 14 + 3), add = TRUE, lty = 3)
+curve(dbeta(x, 116 + 7, 8 + 3), add = TRUE, lty = 4)
+legend(0,17, legend = c("prior", "Adelie", "Chinstrap", "Gentoo"), lty = 1:4)
 ```
 
-if the variance is known, the posterior for the mean is a normal distribution:
 
-$$
-\mu' \sim \text{Normal}\left(\frac{\frac{10}{5}+ \frac{\sum{y}}{\sigma^2}}{\frac{1}{5^2} + \frac{n}{\sigma^2}}, \left(\frac{1}{5^2} + \frac{n}{\sigma^2}\right)\right)
-$$
-
-Note that $10$ is the prior mean and $5$ is the prior variance for $\mu$, the mean of the distribution.
-
-if the mean is known, then the posterior distribution for the variance is an inverse gamma:
-
-$$
-\frac{1}{\sigma^2} \sim \text{Gamma}\left(\alpha + \frac{n}{2}, 
-\beta + \frac{\sum (y_i - \mu)^2}{2}\right)
-$$
-
-### let's do it
-
-To implement this model we need to write functions that will do each of these things in turn.
-
-```{r}
-# calculate the posterior normal distribution for the data and a known variance
-
-post_mean <- function(y_vector, known_sigma,
-                      prior_mean, prior_sd,
-                      n = length(y_vector)){
-  numerator_mean <- (prior_mean/prior_sd^2 + sum(y_vector) / known_sigma^2)
-  denominator_mean <- (1 / prior_sd^2 + n / known_sigma^2)
-  
-  new_mean <-  numerator_mean / denominator_mean
-    
-  new_var <- 1/denominator_mean
-  
-  rnorm(1, mean = new_mean, sd = sqrt(new_var))
-}
-
-# fun to play with this! make sure it makes sense! 
-post_mean(y_vector = c(2,4,1,5), .1, 7, 2)
-
-```
-
-```{r}
-post_sd <- function(y_vector, known_mean, prior_alpha, prior_beta){
-  
-  new_alpha <- prior_alpha + length(y_vector) / 2
-  
-  new_beta <- prior_beta + sum((y_vector - known_mean)^2) / 2
-  
-  inverse_variance <- rgamma(n = 1, shape = new_alpha, rate = new_beta)
-  
-  sd_sample <- sqrt(1/inverse_variance)
-  return(sd_sample)
-}
-
-post_sd(c(2,4,1,5), known_mean = 3, prior_alpha = 2^2/2^2, prior_beta = 2/2^2)
-
-sd(c(2,4,1,5))
-```
-
-```{r}
-true_mean <- 24
-true_sd <- 7
-
-y_data <- rnorm(400, mean = true_mean, sd = true_sd)
-
-# gibbs process
-n_iterations <- 2000
-mean_chain <- numeric(n_iterations)
-sd_chain <- numeric(n_iterations)
-
-
-# sample to start -- could be anything, might as well be priors
-mean_chain[1] <- rnorm(1, mean = 10, sd = 5)
-sd_chain[1] <- rgamma(1, shape = 3^2/2^2, rate = 3/2^2)
-
-for (k in 2:n_iterations) {
-  # draw a mean
-  mean_chain[k] <- post_mean(y_vector = y_data,
-                             known_sigma = sd_chain[k - 1],
-                             prior_mean = 10,
-                             prior_sd = 5)
-  sd_chain[k] <- post_sd(y_vector = y_data, 
-                         known_mean = mean_chain[k],
-                         prior_alpha = 3^2/2^2,
-                         prior_beta = 3/2^2)
-}
-
-par(mfrow = c(1,2))
-plot(mean_chain)
-abline(h = true_mean, col = "red", lwd = 2)
-plot(sd_chain)
-abline(h = true_sd, col = "red", lwd = 2)
-par(mfrow = c(1,1))
-```
-
-You can see that the chains are almost exactly what we want.
-
-```{r}
-curve(dnorm(x, mean = true_mean, sd = true_sd),
-      xlim = c(true_mean - 4 * true_sd,
-               true_mean + 4 * true_sd), 
-      lwd = 2, col = "red", ylim = c(0, 0.07))
-
-for (i in 20:30) {
-  curve(dnorm(x, mean = mean_chain[i], sd = sd_chain[i]), add = TRUE, lty = 2)
-}
-```
-
-Are the posterior medians close to the real values?
-
-```{r}
-median(mean_chain[100:n_iterations])
-true_mean
-
-median(sd_chain[100:n_iterations])
-true_sd
-```
-
-Play with these values and see if you can break this algorithm.
-
-WE can also look at the pairs plot, like this
-
-```{r}
-plot(mean_chain[100:n_iterations], sd_chain[100:n_iterations])
-```
-
-This reveals if there are any correlations in the posterior. 
 
 ## Three parameters at once
 
