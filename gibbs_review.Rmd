@@ -631,7 +631,7 @@ curve(extraDistr::dinvgamma(x = x,
 
 Gibbs sampling is like knitting. Imagine you have several parameters and you're going to take posterior samples for each one. 
 
-```{r fig.show='animate'}
+```{r echo=FALSE}
 vals <- expand_grid(y = 5:1, x = 1:3)
 
 pnames <- c("beta[0]", "beta[1]", "sigma")
@@ -653,8 +653,10 @@ p <- out_list %>%
   theme_void() + 
   transition_states(sim,  transition_length = 0, state_length = 1)
 
-animate(p, nframes = 15)  
+anim_save("param_knit.gif", animate(p, nframes = 15))
 ```
+
+![](param_knit.gif)
 
 In this simple animation, each column is a parameter and each row is an iteration of the model. 
 
