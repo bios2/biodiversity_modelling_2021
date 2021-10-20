@@ -631,7 +631,7 @@ curve(extraDistr::dinvgamma(x = x,
 
 Gibbs sampling is like knitting. Imagine you have several parameters and you're going to take posterior samples for each one. 
 
-```{r echo=FALSE}
+```{r}
 vals <- expand_grid(y = 5:1, x = 1:3)
 
 pnames <- c("beta[0]", "beta[1]", "sigma")
