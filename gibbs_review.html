@@ -3027,7 +3027,31 @@ g &amp;\sim \text{Gamma}\left(\frac{4^2}{3^2}, \frac{4}{3^2}\right)\\
 </p>
 <p>Gibbs sampling is like knitting. Imagine you have several parameters and you’re going to take posterior samples for each one.</p>
 <div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>vals</span> <span class='op'>&lt;-</span> <span class='fu'>expand_grid</span><span class='op'>(</span>y <span class='op'>=</span> <span class='fl'>5</span><span class='op'>:</span><span class='fl'>1</span>, x <span class='op'>=</span> <span class='fl'>1</span><span class='op'>:</span><span class='fl'>3</span><span class='op'>)</span>
 
+<span class='va'>pnames</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"beta[0]"</span>, <span class='st'>"beta[1]"</span>, <span class='st'>"sigma"</span><span class='op'>)</span>
+
+<span class='va'>vals</span> <span class='op'>&lt;-</span> <span class='fu'>mutate</span><span class='op'>(</span><span class='va'>vals</span>, 
+               par <span class='op'>=</span> <span class='va'>pnames</span><span class='op'>[</span><span class='va'>x</span><span class='op'>]</span><span class='op'>)</span>
+
+<span class='va'>out_list</span> <span class='op'>&lt;-</span> <span class='fu'>map</span><span class='op'>(</span><span class='fl'>3</span><span class='op'>:</span><span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span><span class='op'>(</span><span class='va'>vals</span><span class='op'>)</span>, <span class='op'>~</span> <span class='fu'><a href='https://rdrr.io/r/base/transform.html'>transform</a></span><span class='op'>(</span><span class='va'>vals</span>, s <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/rep.html'>rep</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>,<span class='fl'>0</span><span class='op'>)</span>, times <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='va'>.x</span>, <span class='fu'><a href='https://rdrr.io/r/base/nrow.html'>nrow</a></span><span class='op'>(</span><span class='va'>vals</span><span class='op'>)</span><span class='op'>-</span><span class='va'>.x</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+
+<span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span><span class='op'>(</span><span class='va'>out_list</span><span class='op'>)</span> <span class='op'>&lt;-</span> <span class='fu'>stringr</span><span class='fu'>::</span><span class='fu'><a href='https://stringr.tidyverse.org/reference/str_pad.html'>str_pad</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span><span class='op'>(</span><span class='va'>out_list</span><span class='op'>)</span>, width <span class='op'>=</span> <span class='fl'>2</span>, pad <span class='op'>=</span> <span class='st'>"0"</span><span class='op'>)</span>
+
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://gganimate.com'>gganimate</a></span><span class='op'>)</span>
+<span class='va'>p</span> <span class='op'>&lt;-</span> <span class='va'>out_list</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>bind_rows</span><span class='op'>(</span>.id <span class='op'>=</span> <span class='st'>"sim"</span><span class='op'>)</span> <span class='op'>%&gt;%</span>
+  <span class='fu'>ggplot</span><span class='op'>(</span><span class='fu'>aes</span><span class='op'>(</span>x <span class='op'>=</span> <span class='va'>x</span>, y <span class='op'>=</span> <span class='va'>y</span>, width <span class='op'>=</span> <span class='fl'>1</span>, height <span class='op'>=</span> <span class='fl'>1</span>, fill <span class='op'>=</span> <span class='va'>s</span>, label <span class='op'>=</span> <span class='va'>par</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_tile</span><span class='op'>(</span>col <span class='op'>=</span> <span class='st'>"black"</span>, lwd <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>geom_text</span><span class='op'>(</span>parse <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>guides</span><span class='op'>(</span>fill <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'>theme_void</span><span class='op'>(</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='https://gganimate.com/reference/transition_states.html'>transition_states</a></span><span class='op'>(</span><span class='va'>sim</span>,  transition_length <span class='op'>=</span> <span class='fl'>0</span>, state_length <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
+
+<span class='fu'><a href='https://gganimate.com/reference/animate.html'>animate</a></span><span class='op'>(</span><span class='va'>p</span>, nframes <span class='op'>=</span> <span class='fl'>15</span><span class='op'>)</span>  
+</code></pre>
+</div>
 </div>
 <p>In this simple animation, each column is a parameter and each row is an iteration of the model.</p>
 <p>Gibbs sampling works by simplifying a multivariate problem into small steps and tackling each one. We consider that all the parameters are known except the one we are sampling right now. Then, we sample form the posterior distribution for that parameter. This sampling can be done by conjugate posteriors, as we did above. It can also be done with the Metropolis or Metropolis-Hastings algorithm, or even with a combination of the two!</p>
