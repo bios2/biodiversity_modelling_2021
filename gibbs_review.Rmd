@@ -1003,7 +1003,7 @@ $$
 
 Here is a quick simulation to demonstrate (explore on your own if you want!): 
 
-```{r include=FALSE}
+```{r eval=FALSE}
 # constant mean
 truemean <- 60
 sig <- .6
@@ -1141,7 +1141,7 @@ abline(v = true_beta, col = "red")
 
 
 
-### $b$: the Metropolis algorithm
+#### $b$: the Metropolis algorithm
 
 Because $b$ is modeled on the logit scale, we can use a symmetrical prior and a symmetrical proposal distribution. 
 This means we don't need the Metropolis-Hastings correction for asymmetrical proposals.
@@ -1287,7 +1287,7 @@ sample_exponent_Metropolis <- function(exponent_previous_val,
 ```
 
 
-### $c$: the Metropolis-Hastings algorithm
+#### $c$: the Metropolis-Hastings algorithm
 
 This is going to be the same as above, with one addition.
 Here we need to use an asymmetrical proposal distribution and also add a correction for it! 
@@ -1506,9 +1506,20 @@ gibbs_chain %>% as_tibble() %>%
 
 Here are a few thoughts on this process: 
 
-* samplers are rather sensitive to things like starting values, tuning parameters, prior choice etc. What adjustments could you make to this to improve the algorithm? * I chose a VERY large sample size because I want to think about the algorithm itself.  What happens if we choose a more realistic sample size? 
+* samplers are rather sensitive to things like starting values, tuning parameters, prior choice, model structure etc. What adjustments could you make to this to improve the algorithm? 
+* I chose a VERY large sample size because I want to think about the algorithm itself.  What happens if we choose a more realistic sample size? 
 
-Let's plot this posterior to see how it behaves. Specifically, lets see what kind of lines it thinks are reasonable.
+
+### Posterior plots to check your model
+
+We don't have space in this already LONG document to cover the whole story of how to work with a posterior distribution. This includes things like:
+* making predictions to see if your model is working well
+* plotting averages or regression lines
+* making predictions for the results of some manipulation (future projection, adding or removing a treatment)
+* calculating quantities of interest to look at their values (e.g. is the difference between two groups large or small? how sure are we?)
+
+But I do want to show one quick thing we can do with this model: let's plot the average line, aka the "fitted" values. 
+This shows us what kinds of curvy lines the model thinks are "reasonable".
 
 ```{r}
 gibbs_df <- gibbs_chain %>% as_tibble() %>% 
@@ -1528,12 +1539,9 @@ gibbs_df %>%
 
 The lines are reasonably close to the true values (though not quite) and the plot looks pretty good. 
 
-
-
-
-
 # Bonus Zone
 
+some more material that I either cut, streamlined, or didn't have the time to get to! enjoy if you like :) 
 
 ## Conjugate priors, Metropolis-Hastings, and Penguins
 
