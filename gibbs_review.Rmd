@@ -626,6 +626,8 @@ curve(extraDistr::dinvgamma(x = x,
 
 ## Gibbs sampling
 
+### Gibbs is like knitting
+
 <div style="width:100%;height:0;padding-bottom:61%;position:relative;"><iframe src="https://giphy.com/embed/3oEhmHmWP3Y9wQxoli" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/funny-lol-cartoon-3oEhmHmWP3Y9wQxoli">via GIPHY</a></p>
 
 
@@ -668,7 +670,58 @@ The steps for this algorithm are similar to the previous ones:
 1. assuming that all are correct except the first, sample a value for the first.
 1. Assuming that sample was correct for the first, sample the second. 
 
-### Gibbs demo with the Normal Distribution
+Here is an example of the same thing in symbols, if that helps you to understand the process:
+
+Consider a likelihood with two parameters, $\alpha$ and $\beta$. We have some observations, $y$. We define prior distribution for $[\alpha]$ and $[\beta]$, $[\gamma]$ and we want to find the posterior distributions, conditional on the data :
+
+$$
+[\alpha, \beta , \gamma| y] \propto [y | \alpha, \beta, \gamma] [\alpha] [\beta] [\gamma]
+$$
+
+**Step 1** We assume that we know the true value of $\alpha$ and $\beta$, so the posterior depends only on $[\gamma]$ :   
+   
+$$
+[\gamma| y] \propto [y | \gamma] [\gamma]
+$$
+
+We take a sample from this posterior
+  
+**Step 2** We assume that we know the true value of $\gamma$ and $\beta$, so the posterior depends only on $[\alpha]$ :   
+  
+$$
+[\alpha| y] \propto [y | \alpha] [\alpha]
+$$
+  
+
+We take a sample from this posterior
+
+**Step 1** We assume that we know the true value of $\gamma$ and $\alpha$, so the posterior depends only on $[\beta]$ :   
+
+$$
+[\beta| y] \propto [y | \beta] [\beta]
+$$
+
+We take a sample from this posterior.  
+
+Do this "lots" (many thousands) of times and, if all goes well, you get something that approaches the full posterior distribution.
+
+How do we draw these samples? There are many ways, and we have just seen three of the favourite classics: Metropolis, Metropolis-Hastings, and Conjugate Priors.  
+
+In Gibbs sampling, we draw samples by assuming that we know **all** the parameters except the first. Then we assume we know all except the second, then all except the third. This is very similar to above, where we used conjugate priors for calculating the posterior of the mean (using the true variance), and then again the posterior for the variance (using the true mean). In the examples above (in the "One Weird Trick" section) we made use of the _correct_ values for the parameter we assumed we knew. In Gibbs sampling you don't know -- so you start with a random guess instead. As you iterate back and forth across the parameters, your guesses improve and improve until, wondrously, you end up sampling the full and correct posterior. 
+
+### Gibbs is like swimming
+
+<div class="tenor-gif-embed" data-postid="12885197" data-share-method="host" data-aspect-ratio="2.00806" data-width="100%"><a href="https://tenor.com/view/swimming-freestyle-swimming-gif-12885197">Swimming Freestyle Swimming GIF</a>from <a href="https://tenor.com/search/swimming-gifs">Swimming GIFs</a></div> <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+
+Gibbs sampling is also like freestyle swimming. From [Wikipedia](https://en.wikipedia.org/wiki/Freestyle_swimming) : 
+
+>  The term 'freestyle stroke' is sometimes used as a synonym for 'front crawl',[3] as front crawl is the fastest swimming stroke. It is now the most common stroke used in freestyle competitions.
+
+While technically swimmers could use any stroke in Freestyle events, they overwhelmingly prefer the Front Crawl because it is the fastest. So much so that many people call the Front Crawl stroke itself the "Freestyle".  
+
+Gibbs sampling is like this. While, technically, you can use any algorithm you like to sample from the univariate distributions described above -- people use one far more than the others. The use of Conjugate Priors is so incredibly fast compared to all other ways of getting the posterior that Gibbs sampling is nearly synonymous with it. All we have to do is deliberately choose our priors to be conjugates, and we can save huge amounts of time and effort.^[Conjugate priors are not automatically GOOD priors -- either in terms of the behaviour of the model or in terms of what they mean biologically. Modern methods for estimating the posterior, such as Stan, don't have this restriction.]
+
+### Gibbs demonstration with the Normal Distribution
 
 Let's begin by simulating some values from a normal distribution:
 
@@ -698,22 +751,36 @@ What is a gamma distribution anyway, and what does this strange link function me
 
 As usual, simulation is a great way to understand and practice. 
 
-Let's start by simulating values with a mean of 
+Let's start by simulating values with a mean of 4.1 and a standard devation of 2 from a gamma distribution:
 
 ```{r}
 
-rg <- rgamma(1000, shape = 4.1^2/2^2, rate = 4.1/2^2)
-mean(rg)
-sd(rg)
+sample_precision <- rgamma(1000, shape = 4.1^2/2^2, rate = 4.1/2^2)
+mean(sample_precision)
+sd(sample_precision)
 
 curve(dgamma(x, shape = 3^2/2^2, rate = 3/2^2), xlim = c(0, 5))
+```
 
-plot(density(1/rg^.5))
+These values are what are called "precision", and they are a favourite way to think about the Normal distribution. Precision is the inverse of the variance, so it has the opposite effect: When variance is large, the Normal distribution is flatter. When the precision is large, the distribution is narrower and concentrated close to the mean.
+
+If $1/\sigma^2$ is the precision (often written $\tau$) then:
+
+$$
+\sigma = \frac{1}{\sqrt \tau}
+$$
+
+And we can calculate this:
+
+```{r fig.cap="This shows the standard deviations implied by the gamma distribution above."}
+plot(density(1/sqrt(sample_precision)))
 ```
 
 ### Defining and running a Gibbs Sampler
 
 To implement this model we need to write functions that will do each of these things in turn.
+
+First we set up two functions that simply compute the equations above for the conjugate posteriors. Once we have that distribution, we draw a random sample from it and the function returns that value. 
 
 ```{r}
 # calculate the posterior normal distribution for the data and a known variance
@@ -736,6 +803,8 @@ post_mean(y_vector = c(2,4,1,5), .1, 7, 2)
 
 ```
 
+We implement the equation for the posterior of $\sigma$ in the same way.  
+
 ```{r}
 post_sd <- function(y_vector, known_mean, prior_alpha, prior_beta){
   
@@ -751,8 +820,9 @@ post_sd <- function(y_vector, known_mean, prior_alpha, prior_beta){
 
 post_sd(c(2,4,1,5), known_mean = 3, prior_alpha = 2^2/2^2, prior_beta = 2/2^2)
 
-sd(c(2,4,1,5))
 ```
+
+Running the sampler means alternating between these two functions. In each iteration, we take the results of the previous sample and feed them into the next sample. 
 
 ```{r}
 true_mean <- 24
@@ -783,14 +853,17 @@ for (k in 2:n_iterations) {
 }
 
 par(mfrow = c(1,2))
-plot(mean_chain)
+plot(mean_chain, type = "l")
 abline(h = true_mean, col = "red", lwd = 2)
-plot(sd_chain)
+plot(sd_chain, type = "l")
 abline(h = true_sd, col = "red", lwd = 2)
 par(mfrow = c(1,1))
 ```
 
 You can see that the chains are almost exactly what we want.
+
+
+Another way to check our result is to draw a few of the normal curves that our data suggests. 
 
 ```{r}
 curve(dnorm(x, mean = true_mean, sd = true_sd),
@@ -813,8 +886,6 @@ median(sd_chain[100:n_iterations])
 true_sd
 ```
 
-Play with these values and see if you can break this algorithm.
-
 We can also look at the pairs plot, like this
 
 ```{r}
@@ -827,74 +898,117 @@ This reveals if there are any correlations in the posterior.
 
 Sometimes we need a Deluxe option -- running a Metropolis Hastings sampler inside a Gibbs sampler
 
-Let's look at an example where that is necessary
+Let's look at an example where that is necessary: metabolism and body size.^[This is a classic result in Ecology! However I've only taken care to match the qualitative shape of this relationship, not the real units. If you have improvements to suggest please message me!]
 
 $$
 \begin{align}
-y &\sim \text{LogNormal}(\text{log}) \\
+\text{Metabolism} &\sim \text{LogNormal}(\text{log}(\alpha), \beta) \\
+\alpha &= c \times \text{Mass}^d \\
+c &\sim \text{gamma}\left(\frac{3^2}{2^2}, \frac{3}{2^2}\right) \\
+\text{logit}(d) &\sim \text{Normal}(0, 0.5) \\
+\beta &\sim \text{InvGamma(3, 4)}
 \end{align}
 $$
 
+Some notes on this model:
+
+* Metabolism can't be negative, so we model it with a distribution that also can't be negative -- in this case, the LogNormal distribution. 
+* The LogNormal has two parameters. Here I'm calling the $\alpha$ and $\beta$. Sometimes people call them $\mu$ and $\sigma$, but I find that confusing because they are _not_ the mean and the standard deviation. For now, just know that $\alpha$ is the **median** of the data and $\beta$ is the "spread" around it.
+* $\alpha$ is not a parameter in our model, but just a placeholder for our deterministic function, $c \times \text{Mass}^d$.
+* Since the response can't be negative, and body mass can't be negative, that means the constant $c$ can't be negative either! So here we guarantee it by using a bounded prior. 
+* Metabolic relationships are always decelerating curves -- this means that the exponent is always between 0 and 1. Here we guarantee that it will be there by using a logit link function. This means that we can use a symmetrical prior like the Normal distribution.^[quick reminder that using the logit link is a conventional way to take any real number and squish it into the interval $(0,1)$. This means we will be taking values from a normal distribution and feeding them through the inverse logit function to get the value for $b$ in the equation. In other words, if $x \sim \text{Normal}(0,1)$ then $b = \frac{e^x}{1 + e^x}$]
+
+Let's simulate from this model! This will let us see how it works. We'll then use the data to write a Metropolis-In-Gibbs approach that uses **all three** of the techniques we've seen 
+
+### Simulating metabolic data 
+
 ```{r}
+true_beta <- .3
+true_constant <-  2
+true_exponent <- .6
+sample_size <- 5000
+set.seed(1859)
 
-truemean <- 15
-truesd <- 3
+energy_mass <- tibble(
+  masses = runif(n = sample_size, min = 2, max = 320),
+  avg_energy = true_constant*masses^true_exponent,
+  energies = rlnorm(n = sample_size,
+                    meanlog = log(avg_energy), 
+                    sdlog = true_beta))
 
-
-ff <- rlnorm(2000,
-             meanlog = log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2), 
-             sdlog = log((truemean^2 + truesd^2)/truemean^2)^.5)
-
-mean(ff)
-
-sd(ff)
-
-hist(ff)
+data_figure <- energy_mass %>% 
+  ggplot(aes(x = masses, y = energies)) + geom_point()
+data_figure
 ```
 
-conjugacy and the lognormal
+### Setting up the three sampling approaches
+
+#### Mean and likelihood
+
+We need a function to calculate the deterministic part of the model. 
+Note that this is a good place to add any link functions that we're using. 
 
 ```{r}
-# mean 2 sd = 3
-curve(dnorm(x, 
-            mean = (2/20^2 + sum(log(ff))/truesd^2)/(1/20^2 + length(ff)/truesd^2),
-            sd = (1/20^2 + length(ff)/truesd^2)^-1),
-      xlim = c(1, 10)
-)
-abline(v = log(truemean))
+calculate_alpha <- function(constant, logit_exponent, mass_data){
+  
+  inv_logit <- function(x) exp(x)/(1 + exp(x))
+  
+  exponent_zero_one <- inv_logit(logit_exponent)
+  
+  median_energy <- constant * mass_data ^ exponent_zero_one
+  
+  return(median_energy)
+}
+
+data_figure + 
+  stat_function(fun = function(x) calculate_alpha(
+                        constant = true_constant,
+                        logit_exponent = qlogis(true_exponent),
+                        mass_data = x), lwd = 2, col = "green")
 ```
 
-```{r}
-curve(dgamma(x, 
-             shape = 3 + length(ff)/2,
-             rate = 4 + sum( (log(ff) - truemean )^2) / 2), xlim = c(0,.01))
-
-(1/truesd^2)
-
-
-```
+We also need a handy function to take the three parameters (`constant`, `logit_exponent` and `beta`) and use them to calculate the likelihood of the data:
 
 ```{r}
-
-ml <- log(truemean) - .5*log((truemean^2 + truesd^2)/truemean^2)
-
-curve(dgamma(x, 
-             shape = 3 + length(ff)/2,
-             rate = 4 + sum( (log(ff) - ml )^2) / 2), xlim = c(0,40))
-
-abline(v = 1/log((truemean^2 + truesd^2)/truemean^2))
-
-
+loglike_energy <- function(constant, logit_exponent, beta, mass_data, energy_data){
+  
+  alpha <- calculate_alpha(constant = constant,
+                           logit_exponent = logit_exponent,
+                           mass_data = mass_data)
+  
+  log_like_datapoints <- dlnorm(x = energy_data, 
+                                meanlog = log(alpha), 
+                                sdlog = beta, 
+                                log = TRUE)
+  
+  return(sum(log_like_datapoints))
+}
 ```
 
 
-```{r}
 
-truemean <- 15
-truesd <- 3
+
+#### $\beta$: Conjugacy and the lognormal
+
+If we assume we know $\text{log}(\alpha)$ (i.e. the true median) then the distribution of the data depends only on $\beta$. This parameter represents the standard deviation of the *log* of the LogNormal distribution. That is, if you log-transform a LogNormal distribution you get a Normal distribution. This is the standard deviation of _that_ distribution.
+
+Not surprisingly, the Conjugate Posterior looks very similar:
+
+$$
+\begin{align}
+[\beta | y] &\propto \text{LogNormal}(y | \beta) \times \text{InvGamma}(3,4) \\
+ &= \text{InvGamma}\left(3 + \frac{n}{2}, 4 + \frac{\sum\big(\text{log}(y) - \text{log}(\alpha)\big)^2 }{ 2}\right)
+\end{align}
+$$
+
+Here is a quick simulation to demonstrate (explore on your own if you want!): 
+
+```{r include=FALSE}
+# constant mean
+truemean <- 60
 sig <- .6
 
-ff <- rlnorm(2000,
+ff <- rlnorm(1000,
              meanlog = log(truemean), 
              sdlog = sig)
 
@@ -905,55 +1019,515 @@ sd(ff)
 curve(extraDistr::dinvgamma(x, 
                             alpha = 3 + length(ff)/2,
                             beta = 4 + sum( (log(ff) - log(truemean))^2 ) / 2),
-      xlim = c(0,3)
+      xlim = c(0,1)
       # add = TRUE
 )
-abline(v = sig^2)
+abline(v = sig^2, col = "red")
 
+## moving mean
 
-```
+x <- runif(1000, 0, 3)
 
+truemean2 <- x*3
 
+ff2 <- rlnorm(1000,
+             meanlog = log(truemean), 
+             sdlog = sig)
 
-```{r}
+plot(x, ff2)
+
 curve(extraDistr::dinvgamma(x, 
-                            alpha = 3,
-                            beta = 4), xlim = c(0, 3))
-abline(v = truesd^2)
+                            alpha = 3 + length(ff2)/2,
+                            beta = 4 + sum( (log(ff2) - log(truemean2))^2 ) / 2),
+      xlim = c(0,1)
+      # add = TRUE
+)
+
+abline(v = sig^2, col = "red")
+
+# nonlinear
+truemean3 <- 3*x^.7
+
+ff3 <- rlnorm(1000,
+             meanlog = log(truemean3), 
+             sdlog = sig)
+
+plot(x, ff3)
+
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(ff3)/2,
+                            beta = 4 + sum( (log(ff3) - log(truemean3))^2 ) / 2),
+      xlim = c(0,1)
+      # add = TRUE
+)
+
+abline(v = sig^2, col = "red")
+
 ```
 
-
-
+So we simply need a function that takes the "known" value of $\alpha$ and returns a sample from the posterior for $\beta$
 
 ```{r}
-curve(4 * x ^ (.2), xlim = c(1,300))
+
+sample_beta <- function(y, alpha){
+  extraDistr::rinvgamma(1, 
+                        alpha = 3 + length(y)/2,
+                        beta = 4 + sum( (log(y) - log(alpha))^2 ) / 2)
+}
+
 ```
 
-* some kind of decerating power curve
-* one of the parameters is probably less than 1 but not less than 0
+quick demo: if we knew the real values what would this mean:
 
 ```{r}
-true_sd <- 4
-true_value_at_one <-  2
-true_exponent <- .5
-library(tibble)
+
+true_beta <- .3
+true_constant <-  2
+true_exponent <- .6
+sample_size <- 1000
+# set.seed(1859)
 
 energy_mass <- tibble(
-  masses = runif(n = 200, min = 2, max = 320),
-  avg_energy = true_value_at_one*masses^true_exponent,
-  energies = rlnorm(200,
-                    meanlog = log(avg_energy) - .5*log((avg_energy^2 + true_sd^2)/avg_energy^2), 
-                    sdlog = log((avg_energy^2 + true_sd^2)/avg_energy^2)^.5))
+  masses = runif(n = sample_size, min = 2, max = 320),
+  median_energy = true_constant * masses^true_exponent,
+  energies = rlnorm(n = sample_size,
+                    meanlog = log(median_energy), 
+                    sdlog = true_beta))
 
-library(ggplot2)
-
-energy_mass %>% 
+data_figure <- energy_mass %>% 
   ggplot(aes(x = masses, y = energies)) + geom_point()
+data_figure
+
+
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(energy_mass$energies)/2,
+                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
+      xlim = c(0.,.5)
+      # add = TRUE
+)
+
+abline(v = true_beta^2)
+
+example_posterior_beta <- replicate(4000,
+          sample_beta(y = energy_mass$energies,
+                      alpha = calculate_alpha(
+                        constant = true_constant,
+                        logit_exponent = qlogis(true_exponent),
+                        mass_data = energy_mass$masses)
+            )
+)
+
+hist(example_posterior_beta, probability = TRUE)
+
+abline(v = true_beta^2, col = "red")
+
+example_posterior_beta %>% density %>% plot(xlim = c(0.08,.1))
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(energy_mass$energies)/2,
+                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
+      xlim = c(0.08,.1),
+      add = TRUE
+)
+
+hist(example_posterior_beta %>% sqrt)
+
+
+abline(v = true_beta, col = "red")
+
+```
+
+
+
+### $b$: the Metropolis algorithm
+
+Because $b$ is modeled on the logit scale, we can use a symmetrical prior and a symmetrical proposal distribution. 
+This means we don't need the Metropolis-Hastings correction for asymmetrical proposals.
+
+Here we assume that $c$ (`constant`) and $\beta$ (`beta`) are known.
+
+```{r}
+# proposal function to make new parameter values.
+Metropolis_propose_new_val <- function(old_value, tune) {
+  runif(1, min = old_value - tune, max = old_value + tune)
+}
+
+## function to use these to calculate the value of the numerator in Bayes Formula
+## We are working on the LOG scale, so we have to ADD these together
+numerator <- function(logit_exponent_value, 
+                      constant_value, 
+                      beta_value, 
+                      mass_data, 
+                      energy_data,
+                      log_prior)  {
+  # likelihood
+  log_like <- loglike_energy(logit_exponent = logit_exponent_value,
+                             constant = constant_value,
+                             beta = beta_value, 
+                             mass_data = mass_data, 
+                             energy_data = energy_data)
+  # prior
+  return(log_like + log_prior)
+}
+
+
+# for example, try the value "2"
+
+# prior probability of "2"
+log_prior_exponent <- dnorm(x = 2, mean = 0, sd = 0.5, log = TRUE)
+
+# LIkelihood times prior of "2"
+numerator(logit_exponent_value = 2,
+          constant_value = true_constant, 
+          beta_value = true_beta,
+          energy_data = energy_mass$energies,
+          mass_data = energy_mass$masses,
+          log_prior = log_prior_exponent)
+
+```
+
+We need a function to calculate the metropolis acceptance probability. Note that I've changed this from above -- instead of calculating the numerator INSIDE this function, now I'm assuming we already calculated the values for the new (proposal) numerator and the old (previous iteration) numerator. As a reminder, the "numerator" refers to the numerator of Bayes formula: the likelihood of the data multiplied by the prior. 
+
+```{r}
+## function to calculate the acceptance probability
+Metropolis_accept_probability <- function(new_numerator, 
+                                          old_numerator, 
+                                          data_to_use) {
+  
+  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
+  difference_log_scale <- new_numerator - old_numerator
+  
+  # use EXP to undo the LOG -- convert back to probability
+  r <- exp(difference_log_scale)
+  
+  p_accept <- min(1, r)
+  
+  return(p_accept)
+}
+
+
+# the "correct" value is log(true_exponent/(1-true_exponent)), so around .405
+# we can play around that value to see acceptance probabilities less than 1
+
+# compare logit(b) = .4 
+old_log_prior_exponent <- dnorm(x = .4, mean = 0, sd = 0.5, log = TRUE)
+
+old_demo <- numerator(logit_exponent_value = 0.4, 
+                      constant_value = true_constant, 
+                      beta_value = true_beta,
+                      energy_data = energy_mass$energies,
+                      mass_data = energy_mass$masses, 
+                      # add the prior for the SAME value
+                      log_prior = old_log_prior_exponent
+                      )
+
+# compare to logit(b) = .408
+new_log_prior_exponent <- dnorm(x = .408, mean = 0, sd = 0.5, log = TRUE)
+new_demo <- numerator(logit_exponent_value = 0.408,
+                      constant_value = true_constant,
+                      beta_value = true_beta,
+                      energy_data = energy_mass$energies,
+                      mass_data = energy_mass$masses, 
+                      log_prior = new_log_prior_exponent)
+
+Metropolis_accept_probability(new_numerator = new_demo, old_numerator = old_demo)
+
 ```
 
 ```{r}
 
+
+calc_exponent_log_prior <- function(exponent_value){
+  dnorm(x = exponent_value, mean = 0, sd = 0.5, log = TRUE)
+}
+
+sample_exponent_Metropolis <- function(exponent_previous_val,
+                              constant_known,
+                              beta_known,
+                              energy_dat = energy_mass$energies,
+                              mass_dat = energy_mass$masses,
+                              metropolis_tune){
+  # 
+  
+  prev_log_prior_exponent<- calc_exponent_log_prior(exponent_previous_val)
+  
+  ## NOTE exponent is now back on the scale we sample -- numbers from a normal distribution
+  prev_numerator <- numerator(logit_exponent_value = exponent_previous_val, 
+                              constant_value = constant_known, 
+                              beta_value = beta_known,
+                              energy_data = energy_dat,
+                              mass_data = mass_dat, 
+                              # add the prior for the SAME value
+                              log_prior = prev_log_prior_exponent
+  )
+  
+  ## propose new!
+  exponent_propose_val <- Metropolis_propose_new_val(old_value = exponent_previous_val,
+                                                     tune = metropolis_tune)
+  
+  prop_log_prior_exponent <-  calc_exponent_log_prior(exponent_propose_val)
+  
+  prop_numerator <- numerator(logit_exponent_value = exponent_propose_val,
+                              constant_value = constant_known,
+                              beta_value = beta_known,
+                              energy_data = energy_dat,
+                              mass_data = mass_dat,  
+                              log_prior = prop_log_prior_exponent)
+  
+  p_accept <- Metropolis_accept_probability(
+    new_numerator = prop_numerator,
+    old_numerator = prev_numerator)
+  
+  next_val <- ifelse(runif(1) < p_accept, exponent_propose_val, exponent_previous_val)
+  
+  return(next_val)
+}
 ```
+
+
+### $c$: the Metropolis-Hastings algorithm
+
+This is going to be the same as above, with one addition.
+Here we need to use an asymmetrical proposal distribution and also add a correction for it! 
+I've copied this code down from the "Code for Metropolis" section above. 
+Reread that section for more details! 
+
+```{r}
+# proposal function to make new parameter values.
+
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+## NOTE that the mean gets logged as it goes into rlnorm and dlnorm!! 
+## This is a very necessary detail 
+## read the help files (?rlnorm) to find out what the R functions expect
+######## ~~~!!!!!!!!!!!!!~~~~~~#########
+
+# proposal function to make new parameter values.
+MH_propose_new_val <- function(old_value, sig_tune) {
+  rlnorm(1, mean = log(old_value), sd = sig_tune)
+}
+
+MH_propose_density <- function(jump_to, jump_from, sig_tune) {
+  dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
+}
+
+# calculate the correction factor
+calculate_correction <- function(new_value, old_value, tune_parameter){
+  # calculate the correction -- asymmetrical proposal
+  new_from_old <- MH_propose_density(jump_to = new_value,
+                                     jump_from = old_value,
+                                     sig_tune = tune_parameter)
+  
+  old_from_new <- MH_propose_density(jump_to = old_value,
+                                     jump_from = new_value,
+                                     sig_tune = tune_parameter)
+  
+  return(old_from_new / new_from_old)
+}
+
+MetropolisHastings_accept_probability <- function(new_numerator, 
+                                                  old_numerator, 
+                                                  correction) {
+  
+  # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
+  difference_log_scale <- new_numerator - old_numerator
+  
+  # use EXP to undo the LOG -- convert back to probability
+  r <- exp(difference_log_scale)
+  
+  R <- r * correction
+  
+  p_accept <- min(1, R)
+  
+  return(p_accept)
+}
+```
+
+Again, I've made a minor change to the code. Here I've taking the calculation of the "correction factor" and pulled it out into its own function. Hopefully this makes the workflow clearer! 
+
+
+our prior for c was  
+
+$$
+c &\sim \text{gamma}\left(\frac{3^2}{2^2}, \frac{3}{2^2}\right) \\
+$$
+
+
+
+```{r}
+# the "correct" value is 2, so let's play around there to see acceptance probabilites
+
+calc_constant_log_prior <- function(constant_value){
+  dgamma(x = constant_value, shape = 3^2/2^2, rate = 3/2^2, log = TRUE)
+}
+
+old_log_prior_constant <- calc_constant_log_prior(2.01)
+
+## NOTE we have to put the exponent in on the logit scale, just for the sake of this demo
+old_demo <- numerator(logit_exponent_value = qlogis(true_exponent), 
+                      constant_value = 2.01, 
+                      beta_value = true_beta,
+                      energy_data = energy_mass$energies,
+                      mass_data = energy_mass$masses, 
+                      # add the prior for the SAME value
+                      log_prior = old_log_prior_constant
+                      )
+
+# compare to logit(b) = .408
+new_log_prior_constant <-  calc_constant_log_prior(1.85)
+
+
+new_demo <- numerator(logit_exponent_value = qlogis(true_exponent),
+                      constant_value = 1.85,
+                      beta_value = true_beta,
+                      energy_data = energy_mass$energies,
+                      mass_data = energy_mass$masses, 
+                      log_prior = new_log_prior_constant)
+
+correction <- calculate_correction(2.05, 1.85, tune_parameter = 4)
+
+MetropolisHastings_accept_probability(new_numerator = new_demo,
+                                      old_numerator = old_demo, 
+                                      correction = correction)
+```
+
+Let's wrap up all the steps of the Metropolis Hastings process into one function:
+
+```{r}
+sample_constant_MH <- function(constant_previous_val,
+                               exponent_known,
+                               beta_known,
+                               energy_dat = energy_mass$energies,
+                               mass_dat = energy_mass$masses,
+                               MH_tune){
+  # 
+  
+  prev_log_prior_constant <- calc_constant_log_prior(constant_previous_val)
+  
+  ## NOTE exponent is now back on the scale we sample -- numbers from a normal distribution
+  prev_numerator <- numerator(logit_exponent_value = exponent_known, 
+                        constant_value = constant_previous_val, 
+                        beta_value = beta_known,
+                        energy_data = energy_dat,
+                        mass_data = mass_dat, 
+                        # add the prior for the SAME value
+                        log_prior = prev_log_prior_constant
+  )
+  
+  ## propose new!
+  constant_propose_val <- MH_propose_new_val(constant_previous_val,
+                                             sig_tune = MH_tune)
+  
+  prop_log_prior_constant <-  calc_constant_log_prior(constant_propose_val)
+  
+  prop_numerator <- numerator(logit_exponent_value = exponent_known,
+                        constant_value = constant_propose_val,
+                        beta_value = beta_known,
+                        energy_data = energy_dat,
+                        mass_data = mass_dat,  
+                        log_prior = prop_log_prior_constant)
+  
+  correction <- calculate_correction(new_value = constant_previous_val,
+                                     old_value = constant_propose_val,
+                                     tune_parameter = MH_tune)
+  
+  p_accept <- MetropolisHastings_accept_probability(
+    new_numerator = prop_numerator,
+    old_numerator = prev_numerator, 
+    correction = correction)
+  
+  next_val <- ifelse(runif(1) < p_accept, constant_propose_val, constant_previous_val)
+  
+  return(next_val)
+}
+
+```
+
+
+### Combine all three
+
+```{r}
+n_iter <- 15000
+gibbs_chain <- list(constant = numeric(n_iter),
+                    exponent = numeric(n_iter),
+                    beta     = numeric(n_iter))
+
+
+# start value
+gibbs_chain$constant[1] <- 2.5
+gibbs_chain$exponent[1] <- .5
+gibbs_chain$beta[1] <- .1
+
+
+for (k in 2:n_iter) {
+        
+  # constant
+  gibbs_chain$constant[k] <- sample_constant_MH(
+    constant_previous_val = gibbs_chain$constant[k - 1],
+    exponent_known = gibbs_chain$exponent[k - 1],
+    beta_known = gibbs_chain$beta[k - 1],
+    MH_tune = .7)
+  
+  #exponent
+  gibbs_chain$exponent[k] <- sample_exponent_Metropolis(
+    exponent_previous_val = gibbs_chain$exponent[k-1], 
+    constant_known = gibbs_chain$constant[k],
+    beta_known = gibbs_chain$beta[k - 1],
+    metropolis_tune = .4)
+  
+  #beta
+  gibbs_chain$beta[k] <- sample_beta(y = energy_mass$energies,
+                                     alpha = calculate_alpha(
+                                       constant = gibbs_chain$constant[k],
+                                       logit_exponent = gibbs_chain$exponent[k],
+                                       mass_data = energy_mass$masses
+                                     ))
+}
+
+```
+
+
+```{r}
+real_param <- tribble(~parameter, ~truth,
+        "beta", true_beta^2,
+        "constant", true_constant,
+        "exponent", qlogis(true_exponent))
+
+gibbs_chain %>% as_tibble() %>% 
+  mutate(iter = 1:n_iter) %>% 
+  pivot_longer(-iter, names_to = "parameter", values_to = "value") %>% 
+  ggplot(aes(x = iter, y = value)) + 
+  geom_line()+
+  facet_wrap(~parameter, scales = "free_y") + 
+  geom_hline(aes(yintercept = truth), data = real_param)
+
+```
+
+Here are a few thoughts on this process: 
+
+* samplers are rather sensitive to things like starting values, tuning parameters, prior choice etc. What adjustments could you make to this to improve the algorithm? * I chose a VERY large sample size because I want to think about the algorithm itself.  What happens if we choose a more realistic sample size? 
+
+Let's plot this posterior to see how it behaves. Specifically, lets see what kind of lines it thinks are reasonable.
+
+```{r}
+gibbs_df <- gibbs_chain %>% as_tibble() %>% 
+  mutate(iter = 1:n_iter)
+
+with(energy_mass, plot(masses, energies))
+
+gibbs_df %>% 
+  filter(iter > (n_iter-300)) %>% 
+  sample_n(20) %>% 
+  transpose %>% 
+  walk(~ lines(x = 0:310, 
+               y = .$constant*(0:310)^plogis(.$exponent),
+               col = "red"))
+
+```
+
+The lines are reasonably close to the true values (though not quite) and the plot looks pretty good. 
+
 
 
 
