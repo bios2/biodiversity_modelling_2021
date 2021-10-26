@@ -430,6 +430,7 @@ for (i in 2:length(sd_chain)) {
 
 
 plot(sd_chain[300:n_samples], type = "l")
+abline(h = correct_sd, col = "red")
 ```
 
 ```{r}
@@ -931,9 +932,9 @@ set.seed(1859)
 
 energy_mass <- tibble(
   masses = runif(n = sample_size, min = 2, max = 320),
-  avg_energy = true_constant*masses^true_exponent,
+  med_energy = true_constant*masses^true_exponent,
   energies = rlnorm(n = sample_size,
-                    meanlog = log(avg_energy), 
+                    meanlog = log(med_energy), 
                     sdlog = true_beta))
 
 data_figure <- energy_mass %>% 
@@ -985,6 +986,27 @@ loglike_energy <- function(constant, logit_exponent, beta, mass_data, energy_dat
 }
 ```
 
+```{r}
+tibble(x = seq(.1, 4, length.out = 50),
+       l = map_dbl(x, ~ loglike_energy(logit_exponent = qlogis(true_exponent),
+                           constant = .x, 
+                           beta = true_beta,
+                           energy_data = energy_mass$energies,
+                           mass_data = energy_mass$masses))) %>% 
+  ggplot(aes(x = x, y = l)) + geom_point()
+
+
+tibble(x = seq(-.4, 1.4, length.out = 50),
+       l = map_dbl(x, ~ loglike_energy(logit_exponent = .x,
+                           constant = true_constant, 
+                           beta = true_beta,
+                           energy_data = energy_mass$energies,
+                           mass_data = energy_mass$masses))) %>% 
+  ggplot(aes(x = x, y = l)) + 
+  geom_point() + 
+  geom_vline(xintercept = qlogis(true_exponent))
+```
+
 
 
 
@@ -1001,141 +1023,21 @@ $$
 \end{align}
 $$
 
-Here is a quick simulation to demonstrate (explore on your own if you want!): 
-
-```{r eval=FALSE}
-# constant mean
-truemean <- 60
-sig <- .6
-
-ff <- rlnorm(1000,
-             meanlog = log(truemean), 
-             sdlog = sig)
-
-ff %>% median
-
-sd(ff)
-
-curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 + length(ff)/2,
-                            beta = 4 + sum( (log(ff) - log(truemean))^2 ) / 2),
-      xlim = c(0,1)
-      # add = TRUE
-)
-abline(v = sig^2, col = "red")
-
-## moving mean
-
-x <- runif(1000, 0, 3)
-
-truemean2 <- x*3
-
-ff2 <- rlnorm(1000,
-             meanlog = log(truemean), 
-             sdlog = sig)
-
-plot(x, ff2)
-
-curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 + length(ff2)/2,
-                            beta = 4 + sum( (log(ff2) - log(truemean2))^2 ) / 2),
-      xlim = c(0,1)
-      # add = TRUE
-)
-
-abline(v = sig^2, col = "red")
-
-# nonlinear
-truemean3 <- 3*x^.7
-
-ff3 <- rlnorm(1000,
-             meanlog = log(truemean3), 
-             sdlog = sig)
-
-plot(x, ff3)
-
-
-curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 + length(ff3)/2,
-                            beta = 4 + sum( (log(ff3) - log(truemean3))^2 ) / 2),
-      xlim = c(0,1)
-      # add = TRUE
-)
-
-abline(v = sig^2, col = "red")
-
-```
+For an exploration of this, take a look at the Appendix "exploring the Inverse Gamma".
 
 So we simply need a function that takes the "known" value of $\alpha$ and returns a sample from the posterior for $\beta$
 
 ```{r}
 
 sample_beta <- function(y, alpha){
-  extraDistr::rinvgamma(1, 
-                        alpha = 3 + length(y)/2,
+  one_variance <- extraDistr::rinvgamma(1, 
+                        alpha = 50 + length(y)/2,
                         beta = 4 + sum( (log(y) - log(alpha))^2 ) / 2)
+  
+  one_sd <- sqrt(one_variance)
+  
+  return(one_sd)
 }
-
-```
-
-quick demo: if we knew the real values what would this mean:
-
-```{r}
-
-true_beta <- .3
-true_constant <-  2
-true_exponent <- .6
-sample_size <- 1000
-# set.seed(1859)
-
-energy_mass <- tibble(
-  masses = runif(n = sample_size, min = 2, max = 320),
-  median_energy = true_constant * masses^true_exponent,
-  energies = rlnorm(n = sample_size,
-                    meanlog = log(median_energy), 
-                    sdlog = true_beta))
-
-data_figure <- energy_mass %>% 
-  ggplot(aes(x = masses, y = energies)) + geom_point()
-data_figure
-
-
-
-curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 + length(energy_mass$energies)/2,
-                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
-      xlim = c(0.,.5)
-      # add = TRUE
-)
-
-abline(v = true_beta^2)
-
-example_posterior_beta <- replicate(4000,
-          sample_beta(y = energy_mass$energies,
-                      alpha = calculate_alpha(
-                        constant = true_constant,
-                        logit_exponent = qlogis(true_exponent),
-                        mass_data = energy_mass$masses)
-            )
-)
-
-hist(example_posterior_beta, probability = TRUE)
-
-abline(v = true_beta^2, col = "red")
-
-example_posterior_beta %>% density %>% plot(xlim = c(0.08,.1))
-
-curve(extraDistr::dinvgamma(x, 
-                            alpha = 3 + length(energy_mass$energies)/2,
-                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
-      xlim = c(0.08,.1),
-      add = TRUE
-)
-
-hist(example_posterior_beta %>% sqrt)
-
-
-abline(v = true_beta, col = "red")
 
 ```
 
@@ -1154,37 +1056,28 @@ Metropolis_propose_new_val <- function(old_value, tune) {
   runif(1, min = old_value - tune, max = old_value + tune)
 }
 
-## function to use these to calculate the value of the numerator in Bayes Formula
+# we also need a function for the prior
+calculate_exponent_prior_logprob <- function(x){
+  dnorm(x = x, mean = 0, sd = 0.5, log = TRUE)
+} 
+```
+
+quick demo 
+
+```{r}
+log_like <- loglike_energy(logit_exponent = .4,
+                           constant = true_constant, 
+                           beta = true_beta,
+                           energy_data = energy_mass$energies,
+                           mass_data = energy_mass$masses)
+# prior
+log_prior <- calculate_exponent_prior_logprob(.4)
+
+
 ## We are working on the LOG scale, so we have to ADD these together
-numerator <- function(logit_exponent_value, 
-                      constant_value, 
-                      beta_value, 
-                      mass_data, 
-                      energy_data,
-                      log_prior)  {
-  # likelihood
-  log_like <- loglike_energy(logit_exponent = logit_exponent_value,
-                             constant = constant_value,
-                             beta = beta_value, 
-                             mass_data = mass_data, 
-                             energy_data = energy_data)
-  # prior
-  return(log_like + log_prior)
-}
+# This gives us the NUMERATOR of Bayes formula: the likelihood X the prior
+log_like + log_prior
 
-
-# for example, try the value "2"
-
-# prior probability of "2"
-log_prior_exponent <- dnorm(x = 2, mean = 0, sd = 0.5, log = TRUE)
-
-# LIkelihood times prior of "2"
-numerator(logit_exponent_value = 2,
-          constant_value = true_constant, 
-          beta_value = true_beta,
-          energy_data = energy_mass$energies,
-          mass_data = energy_mass$masses,
-          log_prior = log_prior_exponent)
 
 ```
 
@@ -1192,12 +1085,11 @@ We need a function to calculate the metropolis acceptance probability. Note that
 
 ```{r}
 ## function to calculate the acceptance probability
-Metropolis_accept_probability <- function(new_numerator, 
-                                          old_numerator, 
-                                          data_to_use) {
+Metropolis_accept_probability <- function(new_numerator_log, 
+                                          old_numerator_log) {
   
   # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
-  difference_log_scale <- new_numerator - old_numerator
+  difference_log_scale <- new_numerator_log - old_numerator_log
   
   # use EXP to undo the LOG -- convert back to probability
   r <- exp(difference_log_scale)
@@ -1207,41 +1099,30 @@ Metropolis_accept_probability <- function(new_numerator,
   return(p_accept)
 }
 
-
 # the "correct" value is log(true_exponent/(1-true_exponent)), so around .405
 # we can play around that value to see acceptance probabilities less than 1
-
-# compare logit(b) = .4 
-old_log_prior_exponent <- dnorm(x = .4, mean = 0, sd = 0.5, log = TRUE)
-
-old_demo <- numerator(logit_exponent_value = 0.4, 
-                      constant_value = true_constant, 
-                      beta_value = true_beta,
-                      energy_data = energy_mass$energies,
-                      mass_data = energy_mass$masses, 
-                      # add the prior for the SAME value
-                      log_prior = old_log_prior_exponent
-                      )
-
-# compare to logit(b) = .408
-new_log_prior_exponent <- dnorm(x = .408, mean = 0, sd = 0.5, log = TRUE)
-new_demo <- numerator(logit_exponent_value = 0.408,
-                      constant_value = true_constant,
-                      beta_value = true_beta,
-                      energy_data = energy_mass$energies,
-                      mass_data = energy_mass$masses, 
-                      log_prior = new_log_prior_exponent)
-
-Metropolis_accept_probability(new_numerator = new_demo, old_numerator = old_demo)
+Metropolis_accept_probability(
+  new_numerator_log = 
+    loglike_energy(logit_exponent = .399,
+                   constant = true_constant, 
+                   beta = true_beta,
+                   energy_data = energy_mass$energies,
+                   mass_data = energy_mass$masses) + 
+    calculate_exponent_prior_logprob(.399),
+  old_numerator_log = 
+    loglike_energy(logit_exponent = .4,
+                   constant = true_constant, 
+                   beta = true_beta,
+                   energy_data = energy_mass$energies,
+                   mass_data = energy_mass$masses) + 
+    calculate_exponent_prior_logprob(.4))
+    
 
 ```
 
+Put it all together:
+ 
 ```{r}
-
-
-calc_exponent_log_prior <- function(exponent_value){
-  dnorm(x = exponent_value, mean = 0, sd = 0.5, log = TRUE)
-}
 
 sample_exponent_Metropolis <- function(exponent_previous_val,
                               constant_known,
@@ -1251,36 +1132,34 @@ sample_exponent_Metropolis <- function(exponent_previous_val,
                               metropolis_tune){
   # 
   
-  prev_log_prior_exponent<- calc_exponent_log_prior(exponent_previous_val)
+  prev_log_prior_exponent<- calculate_exponent_prior_logprob(exponent_previous_val)
   
-  ## NOTE exponent is now back on the scale we sample -- numbers from a normal distribution
-  prev_numerator <- numerator(logit_exponent_value = exponent_previous_val, 
-                              constant_value = constant_known, 
-                              beta_value = beta_known,
-                              energy_data = energy_dat,
-                              mass_data = mass_dat, 
-                              # add the prior for the SAME value
-                              log_prior = prev_log_prior_exponent
-  )
+  prev_log_like_data <- loglike_energy(logit_exponent = exponent_previous_val,
+                   constant = constant_known, 
+                   beta = beta_known,
+                   energy_data = energy_dat,
+                   mass_data = mass_dat)
   
   ## propose new!
   exponent_propose_val <- Metropolis_propose_new_val(old_value = exponent_previous_val,
                                                      tune = metropolis_tune)
   
-  prop_log_prior_exponent <-  calc_exponent_log_prior(exponent_propose_val)
+
+  propose_log_prior_exponent<- calculate_exponent_prior_logprob(exponent_propose_val)
   
-  prop_numerator <- numerator(logit_exponent_value = exponent_propose_val,
-                              constant_value = constant_known,
-                              beta_value = beta_known,
-                              energy_data = energy_dat,
-                              mass_data = mass_dat,  
-                              log_prior = prop_log_prior_exponent)
-  
+  propose_log_like_data <- loglike_energy(logit_exponent = exponent_propose_val,
+                   constant = constant_known, 
+                   beta = beta_known,
+                   energy_data = energy_dat,
+                   mass_data = mass_dat)
+
   p_accept <- Metropolis_accept_probability(
-    new_numerator = prop_numerator,
-    old_numerator = prev_numerator)
+    new_numerator_log = propose_log_prior_exponent + propose_log_like_data,
+    old_numerator_log = prev_log_prior_exponent + prev_log_like_data)
   
-  next_val <- ifelse(runif(1) < p_accept, exponent_propose_val, exponent_previous_val)
+  next_val <- ifelse(runif(1) < p_accept,
+                     yes = exponent_propose_val, 
+                     no = exponent_previous_val)
   
   return(next_val)
 }
@@ -1305,12 +1184,15 @@ Reread that section for more details!
 
 # proposal function to make new parameter values.
 MH_propose_new_val <- function(old_value, sig_tune) {
-  rlnorm(1, mean = log(old_value), sd = sig_tune)
+  # rlnorm(1, mean = log(old_value), sd = sig_tune)
+  rgamma(1, shape = old_value^2/sig_tune^2, rate = old_value/sig_tune^2)
 }
 
 MH_propose_density <- function(jump_to, jump_from, sig_tune) {
-  dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
+  # dlnorm(x = jump_to, meanlog = log(jump_from), sdlog = sig_tune)
+  dgamma(jump_to, shape = jump_from^2/sig_tune^2, rate = jump_from/sig_tune^2)
 }
+
 
 # calculate the correction factor
 calculate_correction <- function(new_value, old_value, tune_parameter){
@@ -1326,12 +1208,12 @@ calculate_correction <- function(new_value, old_value, tune_parameter){
   return(old_from_new / new_from_old)
 }
 
-MetropolisHastings_accept_probability <- function(new_numerator, 
-                                                  old_numerator, 
+MetropolisHastings_accept_probability <- function(new_numerator_log, 
+                                                  old_numerator_log, 
                                                   correction) {
   
   # working on the LOG scale so we SUBTRACT values (the same as dividing these two things)
-  difference_log_scale <- new_numerator - old_numerator
+  difference_log_scale <- new_numerator_log - old_numerator_log
   
   # use EXP to undo the LOG -- convert back to probability
   r <- exp(difference_log_scale)
@@ -1344,58 +1226,33 @@ MetropolisHastings_accept_probability <- function(new_numerator,
 }
 ```
 
+Check these, same as above: 
+```{r}
+replicate(3000, MH_propose_new_val(9, 0.1)) %>% density %>% plot
+curve(MH_propose_density(jump_to = x, jump_from = 9, sig_tune = 0.1), xlim = c(5,14), add = TRUE)
+```
+
+
 Again, I've made a minor change to the code. Here I've taking the calculation of the "correction factor" and pulled it out into its own function. Hopefully this makes the workflow clearer! 
 
 
 our prior for c was  
 
 $$
-c &\sim \text{gamma}\left(\frac{3^2}{2^2}, \frac{3}{2^2}\right) \\
+c \sim \text{gamma}\left(\frac{3^2}{2^2}, \frac{3}{2^2}\right)
 $$
 
-
-
-```{r}
-# the "correct" value is 2, so let's play around there to see acceptance probabilites
-
-calc_constant_log_prior <- function(constant_value){
-  dgamma(x = constant_value, shape = 3^2/2^2, rate = 3/2^2, log = TRUE)
-}
-
-old_log_prior_constant <- calc_constant_log_prior(2.01)
-
-## NOTE we have to put the exponent in on the logit scale, just for the sake of this demo
-old_demo <- numerator(logit_exponent_value = qlogis(true_exponent), 
-                      constant_value = 2.01, 
-                      beta_value = true_beta,
-                      energy_data = energy_mass$energies,
-                      mass_data = energy_mass$masses, 
-                      # add the prior for the SAME value
-                      log_prior = old_log_prior_constant
-                      )
-
-# compare to logit(b) = .408
-new_log_prior_constant <-  calc_constant_log_prior(1.85)
-
-
-new_demo <- numerator(logit_exponent_value = qlogis(true_exponent),
-                      constant_value = 1.85,
-                      beta_value = true_beta,
-                      energy_data = energy_mass$energies,
-                      mass_data = energy_mass$masses, 
-                      log_prior = new_log_prior_constant)
-
-correction <- calculate_correction(2.05, 1.85, tune_parameter = 4)
-
-MetropolisHastings_accept_probability(new_numerator = new_demo,
-                                      old_numerator = old_demo, 
-                                      correction = correction)
-```
 
 Let's wrap up all the steps of the Metropolis Hastings process into one function:
 
 ```{r}
-sample_constant_MH <- function(constant_previous_val,
+
+# we also need a function for the prior
+calculate_constant_prior_logprob <- function(x){
+  dgamma(x = x, shape = 3^2/2^2, rate = 3/2^2, log = TRUE)
+}
+
+sample_constant_MetropolisH <- function(constant_previous_val,
                                exponent_known,
                                beta_known,
                                energy_dat = energy_mass$energies,
@@ -1403,41 +1260,45 @@ sample_constant_MH <- function(constant_previous_val,
                                MH_tune){
   # 
   
-  prev_log_prior_constant <- calc_constant_log_prior(constant_previous_val)
+  prev_log_prior_constant <- calculate_constant_prior_logprob(constant_previous_val)
   
-  ## NOTE exponent is now back on the scale we sample -- numbers from a normal distribution
-  prev_numerator <- numerator(logit_exponent_value = exponent_known, 
-                        constant_value = constant_previous_val, 
-                        beta_value = beta_known,
-                        energy_data = energy_dat,
-                        mass_data = mass_dat, 
-                        # add the prior for the SAME value
-                        log_prior = prev_log_prior_constant
-  )
+  prev_log_like_data <- loglike_energy(
+    logit_exponent = exponent_known,
+    # the next line is for the parameter we are sampling! 
+    constant = constant_previous_val, 
+    beta = beta_known,
+    energy_data = energy_dat,
+    mass_data = mass_dat)
   
   ## propose new!
   constant_propose_val <- MH_propose_new_val(constant_previous_val,
                                              sig_tune = MH_tune)
   
-  prop_log_prior_constant <-  calc_constant_log_prior(constant_propose_val)
+
+  propose_log_prior_constant <- calculate_constant_prior_logprob(constant_propose_val)
   
-  prop_numerator <- numerator(logit_exponent_value = exponent_known,
-                        constant_value = constant_propose_val,
-                        beta_value = beta_known,
-                        energy_data = energy_dat,
-                        mass_data = mass_dat,  
-                        log_prior = prop_log_prior_constant)
+  propose_log_like_data <- loglike_energy(
+    logit_exponent = exponent_known,
+    # next line is for the parameter we are trying next!
+    constant = constant_propose_val, 
+    beta = beta_known,
+    energy_data = energy_dat,
+    mass_data = mass_dat)
   
+  ## Correction! the special step of MH
   correction <- calculate_correction(new_value = constant_previous_val,
                                      old_value = constant_propose_val,
                                      tune_parameter = MH_tune)
   
+
   p_accept <- MetropolisHastings_accept_probability(
-    new_numerator = prop_numerator,
-    old_numerator = prev_numerator, 
+    new_numerator_log = propose_log_prior_constant + propose_log_like_data,
+    old_numerator_log = prev_log_prior_constant + prev_log_like_data,
     correction = correction)
   
-  next_val <- ifelse(runif(1) < p_accept, constant_propose_val, constant_previous_val)
+  next_val <- ifelse(runif(1) < p_accept,
+                     yes = constant_propose_val, 
+                     no = constant_previous_val)
   
   return(next_val)
 }
@@ -1463,18 +1324,18 @@ gibbs_chain$beta[1] <- .1
 for (k in 2:n_iter) {
         
   # constant
-  gibbs_chain$constant[k] <- sample_constant_MH(
+  gibbs_chain$constant[k] <- sample_constant_MetropolisH(
     constant_previous_val = gibbs_chain$constant[k - 1],
     exponent_known = gibbs_chain$exponent[k - 1],
     beta_known = gibbs_chain$beta[k - 1],
-    MH_tune = .7)
+    MH_tune = .1)
   
   #exponent
-  gibbs_chain$exponent[k] <- sample_exponent_Metropolis(
-    exponent_previous_val = gibbs_chain$exponent[k-1], 
+  gibbs_chain$exponent[k] <-  sample_exponent_Metropolis(
+    exponent_previous_val = gibbs_chain$exponent[k-1],
     constant_known = gibbs_chain$constant[k],
     beta_known = gibbs_chain$beta[k - 1],
-    metropolis_tune = .4)
+    metropolis_tune = .2)
   
   #beta
   gibbs_chain$beta[k] <- sample_beta(y = energy_mass$energies,
@@ -1490,17 +1351,19 @@ for (k in 2:n_iter) {
 
 ```{r}
 real_param <- tribble(~parameter, ~truth,
-        "beta", true_beta^2,
+        "beta", true_beta,
         "constant", true_constant,
         "exponent", qlogis(true_exponent))
 
 gibbs_chain %>% as_tibble() %>% 
   mutate(iter = 1:n_iter) %>% 
+  filter(iter > 300) %>% 
   pivot_longer(-iter, names_to = "parameter", values_to = "value") %>% 
   ggplot(aes(x = iter, y = value)) + 
   geom_line()+
   facet_wrap(~parameter, scales = "free_y") + 
-  geom_hline(aes(yintercept = truth), data = real_param)
+  geom_hline(aes(yintercept = truth),
+             data = real_param, lwd = 3, col = "red")
 
 ```
 
@@ -1804,7 +1667,135 @@ curve(dbeta(x, 116 + 7, 8 + 3), add = TRUE, lty = 4)
 legend(0,17, legend = c("prior", "Adelie", "Chinstrap", "Gentoo"), lty = 1:4)
 ```
 
+## Exploring the Inverse Gamma
 
+Here is a quick simulation to demonstrate (explore on your own if you want!): 
+
+```{r eval=FALSE}
+# constant mean
+truemean <- 60
+sig <- .6
+
+ff <- rlnorm(1000,
+             meanlog = log(truemean), 
+             sdlog = sig)
+
+ff %>% median
+
+sd(ff)
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(ff)/2,
+                            beta = 4 + sum( (log(ff) - log(truemean))^2 ) / 2),
+      xlim = c(0,1)
+      # add = TRUE
+)
+abline(v = sig^2, col = "red")
+
+## moving mean
+
+x <- runif(1000, 0, 3)
+
+truemean2 <- x*3
+
+ff2 <- rlnorm(1000,
+             meanlog = log(truemean), 
+             sdlog = sig)
+
+plot(x, ff2)
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(ff2)/2,
+                            beta = 4 + sum( (log(ff2) - log(truemean2))^2 ) / 2),
+      xlim = c(0,1)
+      # add = TRUE
+)
+
+abline(v = sig^2, col = "red")
+
+# nonlinear
+truemean3 <- 3*x^.7
+
+ff3 <- rlnorm(1000,
+             meanlog = log(truemean3), 
+             sdlog = sig)
+
+plot(x, ff3)
+
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 3 + length(ff3)/2,
+                            beta = 4 + sum( (log(ff3) - log(truemean3))^2 ) / 2),
+      xlim = c(0,1)
+      # add = TRUE
+)
+
+abline(v = sig^2, col = "red")
+
+```
+
+
+
+quick demo: if we knew the real values what would this mean:
+
+```{r}
+
+true_beta <- .3
+true_constant <-  2
+true_exponent <- .6
+sample_size <- 1000
+set.seed(1859)
+
+energy_mass <- tibble(
+  masses = runif(n = sample_size, min = 2, max = 320),
+  median_energy = true_constant * masses^true_exponent,
+  energies = rlnorm(n = sample_size,
+                    meanlog = log(median_energy), 
+                    sdlog = true_beta))
+
+data_figure <- energy_mass %>% 
+  ggplot(aes(x = masses, y = energies)) + geom_point()
+data_figure
+
+
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 50 + length(energy_mass$energies)/2,
+                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
+      xlim = c(0.,.5)
+      # add = TRUE
+)
+
+abline(v = true_beta^2)
+
+example_posterior_beta <- replicate(4000,
+          sample_beta(y = energy_mass$energies,
+                      alpha = calculate_alpha(
+                        constant = true_constant,
+                        logit_exponent = qlogis(true_exponent),
+                        mass_data = energy_mass$masses)
+            )
+)
+
+hist(example_posterior_beta, probability = TRUE)
+
+abline(v = true_beta^2, col = "red")
+
+example_posterior_beta %>% density %>% plot(xlim = c(0.08,.1))
+
+curve(extraDistr::dinvgamma(x, 
+                            alpha = 50 + length(energy_mass$energies)/2,
+                            beta = 4 + sum( (log(energy_mass$energies) - log(energy_mass$median_energy))^2 ) / 2),
+      xlim = c(0.08,.1),
+      add = TRUE
+)
+
+hist(example_posterior_beta %>% sqrt)
+
+
+abline(v = true_beta, col = "red")
+
+```
 
 ## Three parameters at once
 
