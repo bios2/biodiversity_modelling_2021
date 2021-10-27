@@ -3303,6 +3303,14 @@ c &amp;\sim \text{gamma}\left(\frac{3^2}{2^2}, \frac{3}{2^2}\right) \\
 </ul>
 <p>Let’s simulate from this model! This will let us see how it works. We’ll then use the data to write a Metropolis-In-Gibbs approach that uses <strong>all three</strong> of the techniques we’ve seen</p>
 <h3 id="simulating-metabolic-data">Simulating metabolic data</h3>
+<p>Our first step is to simulate from the model above! The workflow goes like this:</p>
+<ol type="1">
+<li>Set true values for <span class="math inline">\(c\)</span>, <span class="math inline">\(d\)</span> and <span class="math inline">\(\beta\)</span>. Later we’ll use these to verify if we have the correct information.</li>
+<li>Create a fake vector of Mass values. We imagine they are evenly spaced over a reasonable range.</li>
+<li>Calculate the median Metabolic rate (a.k.a “Energy”, our response).</li>
+<li>Simulate observations around that median value.</li>
+</ol>
+<p>This code does these steps:</p>
 <div class="layout-chunk" data-layout="l-body">
 <div class="sourceCode">
 <pre class="sourceCode r"><code class="sourceCode r"><span class='va'>true_beta</span> <span class='op'>&lt;-</span> <span class='fl'>.3</span>
