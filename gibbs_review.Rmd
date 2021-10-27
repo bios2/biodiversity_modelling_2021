@@ -923,6 +923,15 @@ Let's simulate from this model! This will let us see how it works. We'll then us
 
 ### Simulating metabolic data 
 
+Our first step is to simulate from the model above! The workflow goes like this:
+
+1. Set true values for $c$, $d$ and $\beta$. Later we'll use these to verify if we have the correct information.
+2. Create a fake vector of Mass values. We imagine they are evenly spaced over a reasonable range. 
+3. Calculate the median Metabolic rate (a.k.a "Energy", our response).
+4. Simulate observations around that median value. 
+
+This code does these steps:
+
 ```{r}
 true_beta <- .3
 true_constant <-  2
