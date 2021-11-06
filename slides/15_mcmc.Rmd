@@ -406,7 +406,7 @@ mh.acceptance < – function(current, previous, target, prior, other.params, dat
 	num < – target(current, prior, other.params, data)
 	denom < – target(previous, prior, other.params, data)
 	if (denom == 0) return(-1)
-	else return(-num/denom)	
+	else return(num/denom)	
 }
 
 ```
